@@ -3,7 +3,7 @@
 A fork of RuneLite's built-in Ground Items plugin with three additions:
 
 - **Tile fill and outline you control.** Mark the whole tile or just a circle in its centre. Tiles can use the item's colour or one custom colour for the outline and the fill, with separate opacity and outline width. One polygon per tile; the highlighted item on a tile decides its colour.
-- **Rename ground items.** Hold the hotkey (ALT by default), right-click an item and pick **Rename**. The custom name is used on the ground, in the right-click menu and when matching your highlight/hidden lists. **Reset name** or an empty rename restores the real name.
+- **Rename ground items.** Hold the hotkey (ALT by default), right-click an item and pick **Rename**. The custom name is used on the ground, in the right-click menu and when matching your highlight/hidden lists. **Reset name** or an empty rename restores the real name. Renames live in the **Item renames** text box as `Real name=Custom name` lines, so copying that box exports them and pasting imports them. `*` works as a wildcard (`Grimy *=Herb`). With **Group doses and charges** on, renaming `Prayer potion(4)` covers the (3), (2) and (1) too.
 - **Item icons on the ground.** Every ground item label gets its icon drawn next to it, on by default.
 - **Ring despawn timer.** Set *Despawn timer* to **Ring** and the timer drains clockwise around the icon (or a small ring left of the name with icons off). Under a configurable number of seconds it pulses in a colour of your choice, faster in the last five seconds.
 - **Tile value total.** When two or more items share a tile, one extra line above the stack shows their summed value, coloured by your value tiers.
@@ -44,7 +44,10 @@ Icons and names
 | Show item icons | on | Icon next to the name on the ground |
 | Icon size | 16 px | Icon height |
 | Custom names in menu | on | Use renamed items in the right-click menu too |
+| Group doses and charges | on | `(4)`, `(3)`... suffixes share one rename |
+| Item renames | empty | One `Real name=Custom name` per line; copy to export, paste to import |
 
 ## Changelog
 
+- 1.1.0: renames stored in an editable text box (export/import), wildcard renames, dose grouping, ring despawn timer with pulse, tile value totals, circle tile marks
 - 1.0.0: initial release

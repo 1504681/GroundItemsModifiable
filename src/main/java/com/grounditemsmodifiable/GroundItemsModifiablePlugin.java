@@ -35,12 +35,14 @@ import java.awt.Rectangle;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -52,6 +54,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemLayer;
 import net.runelite.api.KeyCode;
@@ -99,6 +102,7 @@ import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.QuantityFormatter;
 import net.runelite.client.util.RSTimeUnit;
 import net.runelite.client.util.Text;
+import net.runelite.client.util.WildcardMatcher;
 
 @PluginDescriptor(
 	name = "Ground Items Modifiable",
@@ -107,9 +111,12 @@ import net.runelite.client.util.Text;
 )
 public class GroundItemsModifiablePlugin extends Plugin
 {
-	static final String VERSION = "1.0.0";
+	static final String VERSION = "1.1.0";
 	private static final String HIGHLIGHT_COLOR_PREFIX = "highlight_";
-	private static final String ITEM_NAME_PREFIX = "name_";
+	// pre-1.1 storage of renames, migrated into the renames text box on start
+	private static final String LEGACY_NAME_PREFIX = "name_";
+	// "(4)", "(3)" ... dose and charge suffixes
+	private static final Pattern DOSE_SUFFIX = Pattern.compile("\\s*\\(\\d+\\)$");
 	// config group of the built-in Ground Items plugin, imported on first run
 	private static final String CORE_GROUP = "grounditems";
 	private static final String IMPORTED_KEY = "importedCoreConfig";
@@ -146,6 +153,10 @@ public class GroundItemsModifiablePlugin extends Plugin
 
 	private ItemList highlightedItems = new ItemList(Collections.emptyList());
 	private ItemList hiddenItems = new ItemList(Collections.emptyList());
+	// lower-cased real name (dose stripped when grouping) -> custom name
+	private volatile Map<String, String> renames = Collections.emptyMap();
+	// wildcard patterns, in file order
+	private volatile List<Map.Entry<String, String>> wildcardRenames = Collections.emptyList();
 
 	@Inject
 	private GroundItemHotkeyListener hotkeyListener;
@@ -210,6 +221,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 		mouseManager.registerMouseListener(mouseAdapter);
 		keyManager.registerKeyListener(hotkeyListener);
 		importCoreConfig();
+		clientThread.invoke(this::migrateLegacyRenames);
 		executor.execute(this::reset);
 	}
 
@@ -435,7 +447,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 			.stackable(itemComposition.isStackable())
 			.despawnTime(Duration.of(despawnTime, RSTimeUnit.GAME_TICKS))
 			.visibleTime(Duration.of(visibleTime, RSTimeUnit.GAME_TICKS))
-			.displayName(getItemName(itemId))
+			.displayName(resolveRename(itemComposition.getName()))
 			.build();
 
 		// Update item price in case it is coins
@@ -456,6 +468,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 	{
 		highlightedItems = new ItemList(Text.fromCSV(config.getHighlightItems()));
 		hiddenItems = new ItemList(Text.fromCSV(config.getHiddenItems()));
+		parseRenames();
 
 		// Cache colors
 		ImmutableList.Builder<PriceHighlight> priceCheckBuilder = ImmutableList.builder();
@@ -485,7 +498,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 		clientThread.invokeLater(() -> collectedGroundItems.values().forEach(item ->
 		{
 			item.reset();
-			item.setDisplayName(getItemName(item.getId()));
+			item.setDisplayName(resolveRename(item.getName()));
 		}));
 		clientThread.invokeLater(this::handleLootbeams);
 	}
@@ -563,13 +576,14 @@ public class GroundItemsModifiablePlugin extends Plugin
 			final String realName = groundItem != null
 				? groundItem.getName()
 				: itemManager.getItemComposition(itemId).getName();
-			final String customName = getItemName(itemId);
+			final String key = renameKey(realName);
+			final String customName = renames.get(key.toLowerCase());
 
 			client.createMenuEntry(-1)
 				.setOption("Rename")
 				.setTarget(target)
 				.setType(MenuAction.RUNELITE)
-				.onClick(e -> openRename(itemId, realName, customName));
+				.onClick(e -> openRename(key, customName));
 
 			if (customName != null)
 			{
@@ -577,7 +591,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 					.setOption("Reset name")
 					.setTarget(target)
 					.setType(MenuAction.RUNELITE)
-					.onClick(e -> unsetItemName(itemId));
+					.onClick(e -> setRename(key, null));
 			}
 		}
 	}
@@ -652,21 +666,14 @@ public class GroundItemsModifiablePlugin extends Plugin
 				.onClick(e -> setItemColor(itemId, c)));
 	}
 
-	private void openRename(int itemId, String realName, String customName)
+	private void openRename(String key, String customName)
 	{
-		chatboxPanelManager.openTextInput("Rename " + realName + " (leave empty to reset)")
-			.value(customName != null ? customName : realName)
+		chatboxPanelManager.openTextInput("Rename " + key + " (leave empty to reset)")
+			.value(customName != null ? customName : key)
 			.onDone((Consumer<String>) value ->
 			{
 				final String name = value == null ? "" : value.trim();
-				if (name.isEmpty() || name.equals(realName))
-				{
-					unsetItemName(itemId);
-				}
-				else
-				{
-					setItemName(itemId, name);
-				}
+				setRename(key, name.isEmpty() || name.equals(key) ? null : name);
 			})
 			.build();
 	}
@@ -990,19 +997,129 @@ public class GroundItemsModifiablePlugin extends Plugin
 		configManager.unsetConfiguration(GroundItemsModifiableConfig.GROUP, HIGHLIGHT_COLOR_PREFIX + itemId);
 	}
 
-	String getItemName(int itemId)
+	/**
+	 * The name a rename is stored under: the real item name, minus the dose/charge suffix when grouping is on.
+	 */
+	String renameKey(String realName)
 	{
-		return configManager.getConfiguration(GroundItemsModifiableConfig.GROUP, ITEM_NAME_PREFIX + itemId);
+		return config.groupDoses() ? DOSE_SUFFIX.matcher(realName).replaceFirst("") : realName;
 	}
 
-	void setItemName(int itemId, String name)
+	/**
+	 * Custom name for a real item name, or null when it has none. Exact lines win over wildcard lines.
+	 */
+	String resolveRename(String realName)
 	{
-		configManager.setConfiguration(GroundItemsModifiableConfig.GROUP, ITEM_NAME_PREFIX + itemId, name);
+		final String key = renameKey(realName).toLowerCase();
+		final String exact = renames.get(key);
+		if (exact != null)
+		{
+			return exact;
+		}
+
+		for (Map.Entry<String, String> wildcard : wildcardRenames)
+		{
+			if (WildcardMatcher.matches(wildcard.getKey(), key))
+			{
+				return wildcard.getValue();
+			}
+		}
+
+		return null;
 	}
 
-	void unsetItemName(int itemId)
+	private void parseRenames()
 	{
-		configManager.unsetConfiguration(GroundItemsModifiableConfig.GROUP, ITEM_NAME_PREFIX + itemId);
+		final Map<String, String> exact = new HashMap<>();
+		final List<Map.Entry<String, String>> wildcards = new ArrayList<>();
+
+		for (String line : config.renames().split("\n"))
+		{
+			final int eq = line.indexOf('=');
+			if (eq <= 0 || line.trim().startsWith("#"))
+			{
+				continue;
+			}
+
+			final String key = line.substring(0, eq).trim();
+			final String value = line.substring(eq + 1).trim();
+			if (key.isEmpty() || value.isEmpty())
+			{
+				continue;
+			}
+
+			if (key.indexOf('*') >= 0)
+			{
+				wildcards.add(Map.entry(key.toLowerCase(), value));
+			}
+			else
+			{
+				exact.put(key.toLowerCase(), value);
+			}
+		}
+
+		renames = exact;
+		wildcardRenames = wildcards;
+	}
+
+	/**
+	 * Add, replace or (name == null) remove the line for one key in the renames text box.
+	 */
+	void setRename(String key, String name)
+	{
+		final List<String> lines = new ArrayList<>(Arrays.asList(config.renames().split("\n")));
+		lines.removeIf(line ->
+		{
+			final int eq = line.indexOf('=');
+			return line.trim().isEmpty() || (eq > 0 && line.substring(0, eq).trim().equalsIgnoreCase(key));
+		});
+
+		if (name != null)
+		{
+			lines.add(key + "=" + name);
+		}
+
+		config.setRenames(String.join("\n", lines));
+	}
+
+	/**
+	 * Convert the hidden per-item-id rename keys of 1.0 into lines of the renames text box.
+	 */
+	private boolean migrateLegacyRenames()
+	{
+		final String group = GroundItemsModifiableConfig.GROUP;
+		final String prefix = group + "." + LEGACY_NAME_PREFIX;
+		final List<String> keys = configManager.getConfigurationKeys(prefix);
+		if (keys.isEmpty())
+		{
+			return true;
+		}
+
+		if (client.getGameState().getState() < GameState.LOGIN_SCREEN.getState())
+		{
+			// item definitions are not loaded yet; try again next tick
+			return false;
+		}
+
+		for (String wholeKey : keys)
+		{
+			final String key = wholeKey.substring(group.length() + 1);
+			final String value = configManager.getConfiguration(group, key);
+			try
+			{
+				final int itemId = Integer.parseInt(key.substring(LEGACY_NAME_PREFIX.length()));
+				if (value != null && !value.isEmpty())
+				{
+					setRename(renameKey(itemManager.getItemComposition(itemId).getName()), value);
+				}
+			}
+			catch (NumberFormatException ignored)
+			{
+			}
+			configManager.unsetConfiguration(group, key);
+		}
+
+		return true;
 	}
 
 	/*

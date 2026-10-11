@@ -706,4 +706,35 @@ public interface GroundItemsModifiableConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "groupDoses",
+		name = "Group doses and charges",
+		description = "Renaming 'Prayer potion(4)' renames every dose: the (4), (3), (2), (1) suffix is ignored when matching.",
+		position = 3,
+		section = iconSection
+	)
+	default boolean groupDoses()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "renames",
+		name = "Item renames",
+		description = "One rename per line: Real name=Custom name. * works as a wildcard. The Rename menu option writes here; copy the box to export, paste to import.",
+		position = 4,
+		section = iconSection
+	)
+	default String renames()
+	{
+		return "";
+	}
+
+	@ConfigItem(
+		keyName = "renames",
+		name = "",
+		description = ""
+	)
+	void setRenames(String renames);
 }

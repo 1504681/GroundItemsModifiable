@@ -722,7 +722,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "renames",
 		name = "Item renames",
-		description = "One rename per line: Real name=Custom name. * works as a wildcard. The Rename menu option writes here; copy the box to export, paste to import.",
+		description = "Your renames, one per line as Real name=Custom name. * works as a wildcard. Use the Rename menu option (hotkey + right-click an item) and its Renames > Export / Import entries rather than editing this by hand.",
 		position = 4,
 		section = iconSection
 	)

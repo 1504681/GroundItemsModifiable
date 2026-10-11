@@ -32,6 +32,9 @@ import com.google.common.collect.Table;
 import com.google.inject.Provides;
 import java.awt.Color;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -39,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,6 +57,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.ItemComposition;
@@ -69,6 +74,7 @@ import static net.runelite.api.TileItem.OWNERSHIP_SELF;
 import net.runelite.api.WorldView;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ClientTick;
+import net.runelite.api.events.CommandExecuted;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.ItemDespawned;
 import net.runelite.api.events.ItemQuantityChanged;
@@ -593,6 +599,36 @@ public class GroundItemsModifiablePlugin extends Plugin
 					.setType(MenuAction.RUNELITE)
 					.onClick(e -> setRename(key, null));
 			}
+
+			Menu renamesMenu = client.createMenuEntry(-1)
+				.setOption("Renames")
+				.setTarget("")
+				.setType(MenuAction.RUNELITE)
+				.createSubMenu();
+			renamesMenu.createMenuEntry(-1)
+				.setOption("Export to clipboard")
+				.setType(MenuAction.RUNELITE)
+				.onClick(e -> exportRenames());
+			renamesMenu.createMenuEntry(-1)
+				.setOption("Import from clipboard")
+				.setType(MenuAction.RUNELITE)
+				.onClick(e -> importRenames());
+		}
+	}
+
+	@Subscribe
+	public void onCommandExecuted(CommandExecuted event)
+	{
+		switch (event.getCommand().toLowerCase())
+		{
+			case "exportrenames":
+				exportRenames();
+				break;
+			case "importrenames":
+				importRenames();
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -1028,12 +1064,19 @@ public class GroundItemsModifiablePlugin extends Plugin
 		return null;
 	}
 
-	private void parseRenames()
+	/**
+	 * "Real name=Custom name" lines to an ordered map keyed by the real name as written. Blank, comment and
+	 * malformed lines are dropped; a repeated key keeps the last line.
+	 */
+	private static LinkedHashMap<String, String> parseRenameLines(String text)
 	{
-		final Map<String, String> exact = new HashMap<>();
-		final List<Map.Entry<String, String>> wildcards = new ArrayList<>();
+		final LinkedHashMap<String, String> result = new LinkedHashMap<>();
+		if (text == null)
+		{
+			return result;
+		}
 
-		for (String line : config.renames().split("\n"))
+		for (String line : text.split("\\r?\\n"))
 		{
 			final int eq = line.indexOf('=');
 			if (eq <= 0 || line.trim().startsWith("#"))
@@ -1043,23 +1086,101 @@ public class GroundItemsModifiablePlugin extends Plugin
 
 			final String key = line.substring(0, eq).trim();
 			final String value = line.substring(eq + 1).trim();
-			if (key.isEmpty() || value.isEmpty())
+			if (!key.isEmpty() && !value.isEmpty())
 			{
-				continue;
+				result.put(key, value);
 			}
+		}
 
+		return result;
+	}
+
+	private void parseRenames()
+	{
+		final Map<String, String> exact = new HashMap<>();
+		final List<Map.Entry<String, String>> wildcards = new ArrayList<>();
+
+		for (Map.Entry<String, String> entry : parseRenameLines(config.renames()).entrySet())
+		{
+			final String key = entry.getKey().toLowerCase();
 			if (key.indexOf('*') >= 0)
 			{
-				wildcards.add(Map.entry(key.toLowerCase(), value));
+				wildcards.add(Map.entry(key, entry.getValue()));
 			}
 			else
 			{
-				exact.put(key.toLowerCase(), value);
+				exact.put(key, entry.getValue());
 			}
 		}
 
 		renames = exact;
 		wildcardRenames = wildcards;
+	}
+
+	private void exportRenames()
+	{
+		final LinkedHashMap<String, String> current = parseRenameLines(config.renames());
+		if (current.isEmpty())
+		{
+			chatMessage("No item renames to export.");
+			return;
+		}
+
+		final StringBuilder sb = new StringBuilder();
+		current.forEach((k, v) -> sb.append(k).append('=').append(v).append('\n'));
+		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(sb.toString()), null);
+		chatMessage("Copied " + current.size() + " item rename" + (current.size() == 1 ? "" : "s") + " to the clipboard.");
+	}
+
+	private void importRenames()
+	{
+		String text;
+		try
+		{
+			text = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+		}
+		catch (Exception ex)
+		{
+			chatMessage("The clipboard has no text to import.");
+			return;
+		}
+
+		final LinkedHashMap<String, String> incoming = parseRenameLines(text);
+		if (incoming.isEmpty())
+		{
+			chatMessage("The clipboard has no 'Real name=Custom name' lines.");
+			return;
+		}
+
+		// merge: incoming lines replace existing ones with the same key, everything else is kept
+		final LinkedHashMap<String, String> merged = new LinkedHashMap<>();
+		for (Map.Entry<String, String> entry : parseRenameLines(config.renames()).entrySet())
+		{
+			merged.put(entry.getKey().toLowerCase(), entry.getKey() + "=" + entry.getValue());
+		}
+
+		int added = 0;
+		int replaced = 0;
+		for (Map.Entry<String, String> entry : incoming.entrySet())
+		{
+			if (merged.put(entry.getKey().toLowerCase(), entry.getKey() + "=" + entry.getValue()) == null)
+			{
+				added++;
+			}
+			else
+			{
+				replaced++;
+			}
+		}
+
+		config.setRenames(String.join("\n", merged.values()));
+		chatMessage("Imported " + incoming.size() + " item rename" + (incoming.size() == 1 ? "" : "s")
+			+ " (" + added + " new, " + replaced + " replaced).");
+	}
+
+	private void chatMessage(String message)
+	{
+		client.addChatMessage(ChatMessageType.CONSOLE, "", message, null);
 	}
 
 	/**

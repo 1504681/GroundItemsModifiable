@@ -1,8 +1,8 @@
 {
-  "plugins": ["com.myplugin.MyPlugin"],
-  "displayName": "My Plugin",
+  "plugins": ["com.grounditemsmodifiable.GroundItemsModifiablePlugin"],
+  "displayName": "Ground Items Modifiable",
   "author": "1504681",
-  "description": "A RuneLite plugin",
-  "tags": ["example"],
+  "description": "Ground Items with custom tile fill and outline colours, renameable items and item icons drawn on the ground",
+  "tags": ["ground", "items", "loot", "highlight", "tile", "fill", "rename", "icon", "icons", "overlay", "lootbeam"],
   "version": "1.0.0"
 }

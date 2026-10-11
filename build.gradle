@@ -18,7 +18,7 @@ repositories {
 }
 
 def runeLiteVersion = 'latest.release'
-def pluginMainClass = 'com.myplugin.MyPluginLauncher'
+def pluginMainClass = 'com.grounditemsmodifiable.GroundItemsModifiableLauncher'
 
 dependencies {
 	compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
@@ -41,7 +41,7 @@ configurations.all {
 	}
 }
 
-group = 'com.myplugin'
+group = 'com.grounditemsmodifiable'
 version = '1.0.0'
 
 tasks.withType(JavaCompile).configureEach {

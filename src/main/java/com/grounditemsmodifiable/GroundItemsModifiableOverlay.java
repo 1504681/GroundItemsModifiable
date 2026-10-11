@@ -43,6 +43,7 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.Stroke;
+import java.awt.geom.Arc2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.time.Instant;
@@ -100,6 +101,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private final Map<WorldPoint, Integer> offsetMap = new HashMap<>();
 	private final List<GroundItem> visibleItems = new ArrayList<>();
 	private final Map<WorldPoint, GroundItem> tileItems = new LinkedHashMap<>();
+	private final Map<WorldPoint, long[]> tileTotals = new LinkedHashMap<>();
 
 	@Inject
 	private GroundItemsModifiableOverlay(Client client, GroundItemsModifiablePlugin plugin, GroundItemsModifiableConfig config, ItemManager itemManager)
@@ -196,9 +198,11 @@ public class GroundItemsModifiableOverlay extends Overlay
 		final int accountType = client.getVarbitValue(VarbitID.IRONMAN);
 		final boolean showIcons = config.showItemIcons();
 		final int iconHeight = config.iconSize();
+		final boolean showTileTotal = config.showTileTotal();
 
 		// Pass 1: decide which items are drawn at all
 		visibleItems.clear();
+		tileTotals.clear();
 		for (GroundItem item : groundItemList)
 		{
 			final LocalPoint groundPoint = groundPoint(item);
@@ -228,6 +232,14 @@ public class GroundItemsModifiableOverlay extends Overlay
 			}
 
 			visibleItems.add(item);
+
+			if (showTileTotal)
+			{
+				// [count, value]
+				final long[] total = tileTotals.computeIfAbsent(item.getItemLayer().getWorldLocation(), k -> new long[2]);
+				total[0]++;
+				total[1] += plugin.getValueByMode(item.getGePrice(), item.getHaPrice());
+			}
 		}
 
 		// Pass 2: tiles go under everything else, one polygon per tile
@@ -398,7 +410,20 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 			// When the hotkey is pressed the hidden/highlight boxes are drawn to the right of the text,
 			// so always draw the pie since it is on the left hand side.
-			if (groundItemTimers == DespawnTimerMode.PIE || plugin.isHotKeyPressed())
+			if (groundItemTimers == DespawnTimerMode.RING)
+			{
+				if (icon != null)
+				{
+					final int iconX = textX - iconSpan;
+					final int iconY = textY - (fm.getAscent() + iconHeight) / 2;
+					drawTimerRing(graphics, iconX + iconWidth / 2, iconY + iconHeight / 2, Math.max(iconWidth, iconHeight) + 4, item);
+				}
+				else
+				{
+					drawTimerRing(graphics, textX - TIMER_OVERLAY_DIAMETER / 2 - 2, textY - fm.getAscent() / 2, TIMER_OVERLAY_DIAMETER + 2, item);
+				}
+			}
+			else if (groundItemTimers == DespawnTimerMode.PIE || plugin.isHotKeyPressed())
 			{
 				drawTimerPieOverlay(graphics, textX - iconSpan, textY, item);
 			}
@@ -437,7 +462,123 @@ public class GroundItemsModifiableOverlay extends Overlay
 			textComponent.render(graphics);
 		}
 
+		if (showTileTotal)
+		{
+			renderTileTotals(graphics, outline);
+		}
+
 		return null;
+	}
+
+	/**
+	 * One extra line above the stack of a tile holding two or more items: the summed value, coloured by tier.
+	 */
+	private void renderTileTotals(Graphics2D graphics, boolean outline)
+	{
+		final long minimum = config.tileTotalMinimum();
+
+		for (Map.Entry<WorldPoint, long[]> entry : tileTotals.entrySet())
+		{
+			final long count = entry.getValue()[0];
+			final long value = entry.getValue()[1];
+			if (count < 2 || value <= 0 || value < minimum)
+			{
+				continue;
+			}
+
+			final Integer lastOffset = offsetMap.get(entry.getKey());
+			if (lastOffset == null)
+			{
+				continue;
+			}
+
+			// any item on the tile gives us the layer; the tile item map may be empty when tiles are off
+			GroundItem sample = null;
+			for (GroundItem item : visibleItems)
+			{
+				if (item.getItemLayer().getWorldLocation().equals(entry.getKey()))
+				{
+					sample = item;
+					break;
+				}
+			}
+			if (sample == null)
+			{
+				continue;
+			}
+
+			final LocalPoint groundPoint = groundPoint(sample);
+			if (groundPoint == null)
+			{
+				continue;
+			}
+
+			final String text = "Total: " + QuantityFormatter.quantityToStackSize(value) + " gp";
+			final Point textPoint = Perspective.getCanvasTextLocation(client, graphics, groundPoint, text,
+				sample.getItemLayer().getHeight() + OFFSET_Z);
+			if (textPoint == null)
+			{
+				continue;
+			}
+
+			textComponent.setText(text);
+			textComponent.setColor(plugin.getPriceTierColor(value));
+			textComponent.setOutline(outline);
+			textComponent.setPosition(new java.awt.Point(textPoint.getX(), textPoint.getY() - STRING_GAP * (lastOffset + 1)));
+			textComponent.render(graphics);
+		}
+	}
+
+	/**
+	 * A ring that drains clockwise as the item approaches despawn, pulsing once under the configured threshold.
+	 */
+	private void drawTimerRing(Graphics2D graphics, int centreX, int centreY, int diameter, GroundItem groundItem)
+	{
+		final Instant now = Instant.now();
+		final Instant spawnTime = groundItem.getSpawnTime();
+		final Instant despawnTime = calculateDespawnTime(groundItem);
+		Color ringColor = getItemTimerColor(groundItem);
+
+		if (spawnTime == null || despawnTime == null || ringColor == null)
+		{
+			return;
+		}
+
+		final long remainingMillis = despawnTime.toEpochMilli() - now.toEpochMilli();
+		final float remaining = (float) remainingMillis / (despawnTime.toEpochMilli() - spawnTime.toEpochMilli());
+		float width = config.ringWidth();
+
+		final int pulseSeconds = config.ringPulseSeconds();
+		if (pulseSeconds > 0 && remainingMillis <= pulseSeconds * 1000L)
+		{
+			// 0..1 at roughly 1.5 Hz, faster in the last few seconds
+			final double period = remainingMillis < 5000 ? 350.0 : 700.0;
+			final double pulse = (Math.sin(now.toEpochMilli() / period * Math.PI) + 1) / 2;
+			final Color base = config.ringPulseColor();
+			ringColor = ColorUtil.colorWithAlpha(base, (int) (base.getAlpha() * (0.35 + 0.65 * pulse)));
+			width += (float) pulse * 2;
+		}
+
+		final Stroke originalStroke = graphics.getStroke();
+		final Object originalAa = graphics.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+		graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		graphics.setStroke(new BasicStroke(width, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
+
+		final double x = centreX - diameter / 2.0;
+		final double y = centreY - diameter / 2.0;
+
+		// faint full track so the drained part stays readable
+		graphics.setColor(ColorUtil.colorWithAlpha(Color.BLACK, 90));
+		graphics.draw(new Ellipse2D.Double(x, y, diameter, diameter));
+
+		graphics.setColor(ringColor);
+		graphics.draw(new Arc2D.Double(x, y, diameter, diameter, 90, -360 * remaining, Arc2D.OPEN));
+
+		graphics.setStroke(originalStroke);
+		if (originalAa != null)
+		{
+			graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, originalAa);
+		}
 	}
 
 	private static LocalPoint groundPoint(GroundItem item)

@@ -591,6 +591,78 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigSection(
+		name = "Timer ring and tile totals",
+		description = "The ring despawn timer and the per-tile value total.",
+		position = 42
+	)
+	String ringSection = "ringSection";
+
+	@Range(min = 0, max = 120)
+	@ConfigItem(
+		keyName = "ringPulseSeconds",
+		name = "Ring pulse under",
+		description = "When the despawn timer is set to ring, pulse the ring once this many seconds are left. 0 disables the pulse.",
+		position = 0,
+		section = ringSection
+	)
+	@Units(Units.SECONDS)
+	default int ringPulseSeconds()
+	{
+		return 15;
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "ringPulseColor",
+		name = "Ring pulse colour",
+		description = "Colour of the ring while it is pulsing.",
+		position = 1,
+		section = ringSection
+	)
+	default Color ringPulseColor()
+	{
+		return Color.RED;
+	}
+
+	@Range(min = 1, max = 6)
+	@ConfigItem(
+		keyName = "ringWidth",
+		name = "Ring width",
+		description = "Thickness of the timer ring in pixels.",
+		position = 2,
+		section = ringSection
+	)
+	@Units(Units.PIXELS)
+	default int ringWidth()
+	{
+		return 2;
+	}
+
+	@ConfigItem(
+		keyName = "showTileTotal",
+		name = "Tile value total",
+		description = "When two or more items share a tile, draw a total value line above them, coloured by value tier.",
+		position = 3,
+		section = ringSection
+	)
+	default boolean showTileTotal()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "tileTotalMinimum",
+		name = "Total minimum value",
+		description = "Only show the tile total when it is at least this much.",
+		position = 4,
+		section = ringSection
+	)
+	default int tileTotalMinimum()
+	{
+		return 0;
+	}
+
+	@ConfigSection(
 		name = "Icons and names",
 		description = "Item icons drawn on the ground and custom item names.",
 		position = 41

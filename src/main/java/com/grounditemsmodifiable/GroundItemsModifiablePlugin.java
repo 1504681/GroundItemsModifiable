@@ -836,7 +836,23 @@ public class GroundItemsModifiablePlugin extends Plugin
 		notifier.notify(notificationStringBuilder.toString());
 	}
 
-	private long getValueByMode(long gePrice, int haPrice)
+	/**
+	 * Colour of the value tier a price falls in, or the default item colour below every tier.
+	 */
+	Color getPriceTierColor(long price)
+	{
+		for (PriceHighlight highlight : priceChecks)
+		{
+			if (price > highlight.getPrice())
+			{
+				return highlight.getColor();
+			}
+		}
+
+		return config.defaultColor();
+	}
+
+	long getValueByMode(long gePrice, int haPrice)
 	{
 		switch (config.valueCalculationMode())
 		{

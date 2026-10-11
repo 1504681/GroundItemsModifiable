@@ -5,6 +5,8 @@ A fork of RuneLite's built-in Ground Items plugin with three additions:
 - **Tile fill and outline you control.** Mark the whole tile or just a circle in its centre. Tiles can use the item's colour or one custom colour for the outline and the fill, with separate opacity and outline width. One polygon per tile; the highlighted item on a tile decides its colour.
 - **Rename ground items.** Hold the hotkey (ALT by default), right-click an item and pick **Rename**. The custom name is used on the ground, in the right-click menu and when matching your highlight/hidden lists. **Reset name** or an empty rename restores the real name.
 - **Item icons on the ground.** Every ground item label gets its icon drawn next to it, on by default.
+- **Ring despawn timer.** Set *Despawn timer* to **Ring** and the timer drains clockwise around the icon (or a small ring left of the name with icons off). Under a configurable number of seconds it pulses in a colour of your choice, faster in the last five seconds.
+- **Tile value total.** When two or more items share a tile, one extra line above the stack shows their summed value, coloured by your value tiers.
 
 Everything else (highlight/hidden lists, value tiers, lootbeams, despawn timers, ownership filter, menu recolouring, per-item colours) works as in the original plugin. On first start the plugin copies all of your Ground Items settings, so disable the built-in Ground Items plugin and this one picks up where it left off.
 
@@ -24,6 +26,16 @@ Tile highlight
 | Fill colour | Item colour | Item colour, custom colour or no fill |
 | Item colour fill opacity | 50 | 0–255, applies to item-colour fill |
 | Custom fill colour | black, 50 alpha | Used when fill colour is custom |
+
+Timer ring and tile totals
+
+| Setting | Default | What it does |
+|---|---|---|
+| Ring pulse under | 15 s | Pulse the ring with this much time left, 0 disables |
+| Ring pulse colour | red | Colour while pulsing |
+| Ring width | 2 px | Ring thickness |
+| Tile value total | on | Total line above tiles with 2+ items |
+| Total minimum value | 0 | Hide totals below this value |
 
 Icons and names
 

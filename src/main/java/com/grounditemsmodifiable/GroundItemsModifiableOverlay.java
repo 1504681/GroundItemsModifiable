@@ -32,6 +32,7 @@ import com.grounditemsmodifiable.config.OwnershipFilterMode;
 import com.grounditemsmodifiable.config.PriceDisplayMode;
 import com.grounditemsmodifiable.config.TileColorMode;
 import com.grounditemsmodifiable.config.TileFillMode;
+import com.grounditemsmodifiable.config.TileShape;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -40,7 +41,9 @@ import java.awt.Graphics2D;
 import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.Stroke;
+import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.time.Instant;
 import java.util.AbstractMap.SimpleEntry;
@@ -471,6 +474,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 			return;
 		}
 
+		final TileShape shape = config.tileShape();
+		final double circleScale = config.tileCircleSize() / 100.0;
 		final TileColorMode outlineMode = config.tileOutlineMode();
 		final TileFillMode fillMode = config.tileFillMode();
 		final int outlineWidth = config.tileOutlineWidth();
@@ -488,8 +493,15 @@ public class GroundItemsModifiableOverlay extends Overlay
 				continue;
 			}
 
-			final Polygon poly = Perspective.getCanvasTilePoly(client, groundPoint, item.getItemLayer().getHeight());
+			final int height = item.getItemLayer().getHeight();
+			final Polygon poly = Perspective.getCanvasTilePoly(client, groundPoint, height);
 			if (poly == null)
+			{
+				continue;
+			}
+
+			final Shape mark = shape == TileShape.CIRCLE ? tileCircle(groundPoint, item.getItemLayer().getPlane(), height, poly, circleScale) : poly;
+			if (mark == null)
 			{
 				continue;
 			}
@@ -510,18 +522,35 @@ public class GroundItemsModifiableOverlay extends Overlay
 			if (fill != null && fill.getAlpha() > 0)
 			{
 				graphics.setColor(fill);
-				graphics.fill(poly);
+				graphics.fill(mark);
 			}
 
 			if (outlineWidth > 0)
 			{
 				graphics.setColor(outlineMode == TileColorMode.ITEM_COLOR ? item.color : customOutline);
 				graphics.setStroke(stroke);
-				graphics.draw(poly);
+				graphics.draw(mark);
 			}
 		}
 
 		graphics.setStroke(originalStroke);
+	}
+
+	/**
+	 * An ellipse centred on the tile, sized relative to the tile polygon so it follows zoom and camera pitch.
+	 */
+	private Shape tileCircle(LocalPoint groundPoint, int plane, int height, Polygon poly, double scale)
+	{
+		final Point centre = Perspective.localToCanvas(client, groundPoint, plane, height);
+		if (centre == null)
+		{
+			return null;
+		}
+
+		final Rectangle bounds = poly.getBounds();
+		final double w = Math.max(2, bounds.width * scale);
+		final double h = Math.max(2, bounds.height * scale);
+		return new Ellipse2D.Double(centre.getX() - w / 2, centre.getY() - h / 2, w, h);
 	}
 
 	private Instant calculateDespawnTime(GroundItem groundItem)

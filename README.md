@@ -2,7 +2,7 @@
 
 A fork of RuneLite's built-in Ground Items plugin with three additions:
 
-- **Tile fill and outline you control.** Highlighted tiles can use the item's colour or one custom colour for the outline and the fill, with separate opacity and outline width. One polygon per tile; the highlighted item on a tile decides its colour.
+- **Tile fill and outline you control.** Mark the whole tile or just a circle in its centre. Tiles can use the item's colour or one custom colour for the outline and the fill, with separate opacity and outline width. One polygon per tile; the highlighted item on a tile decides its colour.
 - **Rename ground items.** Hold the hotkey (ALT by default), right-click an item and pick **Rename**. The custom name is used on the ground, in the right-click menu and when matching your highlight/hidden lists. **Reset name** or an empty rename restores the real name.
 - **Item icons on the ground.** Every ground item label gets its icon drawn next to it, on by default.
 
@@ -15,6 +15,8 @@ Tile highlight
 | Setting | Default | What it does |
 |---|---|---|
 | Highlight tiles | off | Draw tiles under ground items |
+| Shape | Whole tile | Outline the whole tile, or draw a circle in its middle |
+| Circle size | 40 % | Circle diameter relative to the tile width |
 | Highlighted items only | off | Only tiles of highlighted and value-tier items |
 | Outline colour | Item colour | Item colour or custom colour |
 | Custom outline colour | white | Used when outline colour is custom |

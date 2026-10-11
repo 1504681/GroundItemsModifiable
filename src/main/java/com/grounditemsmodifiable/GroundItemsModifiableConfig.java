@@ -41,6 +41,7 @@ import com.grounditemsmodifiable.config.MenuHighlightMode;
 import com.grounditemsmodifiable.config.PriceDisplayMode;
 import com.grounditemsmodifiable.config.TileColorMode;
 import com.grounditemsmodifiable.config.TileFillMode;
+import com.grounditemsmodifiable.config.TileShape;
 import com.grounditemsmodifiable.config.ValueCalculationMode;
 import com.grounditemsmodifiable.config.OwnershipFilterMode;
 
@@ -475,10 +476,36 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "tileShape",
+		name = "Shape",
+		description = "Mark the whole tile, or draw a circle in the middle of the tile.",
+		position = 1,
+		section = tileSection
+	)
+	default TileShape tileShape()
+	{
+		return TileShape.TILE;
+	}
+
+	@Range(min = 10, max = 100)
+	@ConfigItem(
+		keyName = "tileCircleSize",
+		name = "Circle size",
+		description = "Circle diameter as a percentage of the tile width.",
+		position = 2,
+		section = tileSection
+	)
+	@Units(Units.PERCENT)
+	default int tileCircleSize()
+	{
+		return 40;
+	}
+
+	@ConfigItem(
 		keyName = "tileHighlightedOnly",
 		name = "Highlighted items only",
 		description = "Only draw tiles under highlighted and value-tier items, not every item.",
-		position = 1,
+		position = 3,
 		section = tileSection
 	)
 	default boolean tileHighlightedOnly()
@@ -490,7 +517,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileOutlineMode",
 		name = "Outline colour",
 		description = "Use the item's colour for the tile outline, or one custom colour for every tile.",
-		position = 2,
+		position = 4,
 		section = tileSection
 	)
 	default TileColorMode tileOutlineMode()
@@ -503,7 +530,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileOutlineColor",
 		name = "Custom outline colour",
 		description = "Tile outline colour when the outline mode is set to custom.",
-		position = 3,
+		position = 5,
 		section = tileSection
 	)
 	default Color tileOutlineColor()
@@ -516,7 +543,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileOutlineWidth",
 		name = "Outline width",
 		description = "Tile outline thickness in pixels. 0 removes the outline.",
-		position = 4,
+		position = 6,
 		section = tileSection
 	)
 	@Units(Units.PIXELS)
@@ -529,7 +556,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileFillMode",
 		name = "Fill colour",
 		description = "Fill the tile with the item's colour, one custom colour, or nothing.",
-		position = 5,
+		position = 7,
 		section = tileSection
 	)
 	default TileFillMode tileFillMode()
@@ -542,7 +569,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileFillOpacity",
 		name = "Item colour fill opacity",
 		description = "Opacity of the fill when the fill mode is the item's colour (0 = invisible, 255 = solid).",
-		position = 6,
+		position = 8,
 		section = tileSection
 	)
 	default int tileFillOpacity()
@@ -555,7 +582,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileFillColor",
 		name = "Custom fill colour",
 		description = "Tile fill colour (with opacity) when the fill mode is set to custom.",
-		position = 7,
+		position = 9,
 		section = tileSection
 	)
 	default Color tileFillColor()

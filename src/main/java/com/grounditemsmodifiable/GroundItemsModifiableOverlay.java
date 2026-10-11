@@ -86,6 +86,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private static final int RECTANGLE_SIZE = 8;
 	// Gap between the item icon and the item name
 	private static final int ICON_GAP = 3;
+	// Points used to approximate the ground circle
+	private static final int CIRCLE_SEGMENTS = 24;
 	private static final Color PUBLIC_TIMER_COLOR = Color.YELLOW;
 	private static final Color PRIVATE_TIMER_COLOR = Color.GREEN;
 	private static final int TIMER_OVERLAY_DIAMETER = 10;
@@ -625,6 +627,11 @@ public class GroundItemsModifiableOverlay extends Overlay
 		final Color customFill = config.tileFillColor();
 		final Stroke originalStroke = graphics.getStroke();
 		final Stroke stroke = new BasicStroke(outlineWidth);
+		final Object originalAa = graphics.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+		if (shape == TileShape.CIRCLE)
+		{
+			graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		}
 
 		for (GroundItem item : tileItems.values())
 		{
@@ -641,7 +648,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 				continue;
 			}
 
-			final Shape mark = shape == TileShape.CIRCLE ? tileCircle(groundPoint, item.getItemLayer().getPlane(), height, poly, circleScale) : poly;
+			final Shape mark = shape == TileShape.CIRCLE ? tileCircle(groundPoint, item.getItemLayer().getPlane(), height, circleScale) : poly;
 			if (mark == null)
 			{
 				continue;
@@ -675,23 +682,39 @@ public class GroundItemsModifiableOverlay extends Overlay
 		}
 
 		graphics.setStroke(originalStroke);
+		if (originalAa != null)
+		{
+			graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, originalAa);
+		}
 	}
 
 	/**
-	 * An ellipse centred on the tile, sized relative to the tile polygon so it follows zoom and camera pitch.
+	 * A circle lying on the ground: points around the tile centre in local coordinates, each projected through the
+	 * game camera. Rotating or tilting the camera therefore distorts it exactly like the tile itself, and the
+	 * per-point height lookup makes it follow slopes.
 	 */
-	private Shape tileCircle(LocalPoint groundPoint, int plane, int height, Polygon poly, double scale)
+	private Shape tileCircle(LocalPoint centre, int plane, int zOffset, double scale)
 	{
-		final Point centre = Perspective.localToCanvas(client, groundPoint, plane, height);
-		if (centre == null)
+		final double radius = Perspective.LOCAL_HALF_TILE_SIZE * scale;
+		final Polygon circle = new Polygon();
+
+		for (int i = 0; i < CIRCLE_SEGMENTS; i++)
 		{
-			return null;
+			final double angle = 2 * Math.PI * i / CIRCLE_SEGMENTS;
+			final LocalPoint edge = new LocalPoint(
+				centre.getX() + (int) Math.round(Math.cos(angle) * radius),
+				centre.getY() + (int) Math.round(Math.sin(angle) * radius),
+				centre.getWorldView());
+			final Point p = Perspective.localToCanvas(client, edge, plane, zOffset);
+			if (p == null)
+			{
+				return null;
+			}
+
+			circle.addPoint(p.getX(), p.getY());
 		}
 
-		final Rectangle bounds = poly.getBounds();
-		final double w = Math.max(2, bounds.width * scale);
-		final double h = Math.max(2, bounds.height * scale);
-		return new Ellipse2D.Double(centre.getX() - w / 2, centre.getY() - h / 2, w, h);
+		return circle;
 	}
 
 	private Instant calculateDespawnTime(GroundItem groundItem)

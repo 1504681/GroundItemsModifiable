@@ -50,5 +50,6 @@ Icons and names
 
 ## Changelog
 
-- 1.1.0: stack size shown as "x 3" (configurable), rename export/import via clipboard, wildcard renames, dose grouping, ring despawn timer with pulse, tile value totals, circle tile marks
+- 1.1.1: stack size shown as "x 3" instead of "(3)", with a format setting
+- 1.1.0: rename export/import via clipboard, wildcard renames, dose grouping, ring despawn timer with pulse, tile value totals, circle tile marks
 - 1.0.0: initial release

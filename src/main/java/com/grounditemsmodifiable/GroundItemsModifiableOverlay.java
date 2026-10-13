@@ -30,6 +30,7 @@ import static com.grounditemsmodifiable.config.ItemHighlightMode.MENU;
 import static com.grounditemsmodifiable.config.ItemHighlightMode.NONE;
 import com.grounditemsmodifiable.config.OwnershipFilterMode;
 import com.grounditemsmodifiable.config.PriceDisplayMode;
+import com.grounditemsmodifiable.config.QuantityFormat;
 import com.grounditemsmodifiable.config.TileColorMode;
 import com.grounditemsmodifiable.config.TileFillMode;
 import com.grounditemsmodifiable.config.TileShape;
@@ -201,6 +202,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 		final boolean showIcons = config.showItemIcons();
 		final int iconHeight = config.iconSize();
 		final boolean showTileTotal = config.showTileTotal();
+		final QuantityFormat quantityFormat = config.quantityFormat();
 
 		// Pass 1: decide which items are drawn at all
 		visibleItems.clear();
@@ -275,9 +277,15 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 			if (item.getQuantity() > 1)
 			{
-				itemStringBuilder.append(" (")
-					.append(QuantityFormatter.quantityToStackSize(item.getQuantity()))
-					.append(')');
+				final String stack = QuantityFormatter.quantityToStackSize(item.getQuantity());
+				if (quantityFormat == QuantityFormat.TIMES)
+				{
+					itemStringBuilder.append(" x ").append(stack);
+				}
+				else
+				{
+					itemStringBuilder.append(" (").append(stack).append(')');
+				}
 			}
 
 			if (item.getId() != ItemID.COINS)

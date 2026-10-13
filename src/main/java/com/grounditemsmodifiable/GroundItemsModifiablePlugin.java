@@ -101,6 +101,7 @@ import static com.grounditemsmodifiable.config.MenuHighlightMode.BOTH;
 import static com.grounditemsmodifiable.config.MenuHighlightMode.NAME;
 import static com.grounditemsmodifiable.config.MenuHighlightMode.OPTION;
 import com.grounditemsmodifiable.config.OwnershipFilterMode;
+import com.grounditemsmodifiable.config.QuantityFormat;
 import net.runelite.client.ui.components.colorpicker.ColorPickerManager;
 import net.runelite.client.ui.components.colorpicker.RuneliteColorPicker;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -871,9 +872,15 @@ public class GroundItemsModifiablePlugin extends Plugin
 
 		if (item.getQuantity() > 1)
 		{
-			notificationStringBuilder.append(" (")
-				.append(QuantityFormatter.quantityToStackSize(item.getQuantity()))
-				.append(')');
+			final String stack = QuantityFormatter.quantityToStackSize(item.getQuantity());
+			if (config.quantityFormat() == QuantityFormat.TIMES)
+			{
+				notificationStringBuilder.append(" x ").append(stack);
+			}
+			else
+			{
+				notificationStringBuilder.append(" (").append(stack).append(')');
+			}
 		}
 
 		notifier.notify(notificationStringBuilder.toString());

@@ -44,10 +44,11 @@ Icons and names
 | Show item icons | on | Icon next to the name on the ground |
 | Icon size | 16 px | Icon height |
 | Custom names in menu | on | Use renamed items in the right-click menu too |
+| Stack size format | x 3 | `Prayer potion(4) x 3` or `Prayer potion(4) (3)` |
 | Group doses and charges | on | `(4)`, `(3)`... suffixes share one rename |
 | Item renames | empty | Your renames as `Real name=Custom name` lines, written by the Rename menu |
 
 ## Changelog
 
-- 1.1.0: rename export/import via clipboard, wildcard renames, dose grouping, ring despawn timer with pulse, tile value totals, circle tile marks
+- 1.1.0: stack size shown as "x 3" (configurable), rename export/import via clipboard, wildcard renames, dose grouping, ring despawn timer with pulse, tile value totals, circle tile marks
 - 1.0.0: initial release

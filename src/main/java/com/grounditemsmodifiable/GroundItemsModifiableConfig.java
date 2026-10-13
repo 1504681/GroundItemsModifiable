@@ -39,6 +39,7 @@ import com.grounditemsmodifiable.config.HighlightTier;
 import com.grounditemsmodifiable.config.ItemHighlightMode;
 import com.grounditemsmodifiable.config.MenuHighlightMode;
 import com.grounditemsmodifiable.config.PriceDisplayMode;
+import com.grounditemsmodifiable.config.QuantityFormat;
 import com.grounditemsmodifiable.config.TileColorMode;
 import com.grounditemsmodifiable.config.TileFillMode;
 import com.grounditemsmodifiable.config.TileShape;
@@ -705,6 +706,18 @@ public interface GroundItemsModifiableConfig extends Config
 	default boolean renameInMenu()
 	{
 		return true;
+	}
+
+	@ConfigItem(
+		keyName = "quantityFormat",
+		name = "Stack size format",
+		description = "How the stack size is written after the name: 'Prayer potion(4) x 3' or 'Prayer potion(4) (3)'.",
+		position = 5,
+		section = iconSection
+	)
+	default QuantityFormat quantityFormat()
+	{
+		return QuantityFormat.TIMES;
 	}
 
 	@ConfigItem(

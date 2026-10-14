@@ -12,6 +12,19 @@ Everything else (highlight/hidden lists, value tiers, lootbeams, despawn timers,
 
 ## Settings
 
+The panel is grouped into sections: Item lists, Ground overlay, Colours and value tiers, Tile highlight, Despawn timer, Renames, Right-click menu, Lootbeams, Notifications, Hotkey. Settings carried over from Ground Items behave as they did there. The ones this fork adds:
+
+Ground overlay
+
+| Setting | Default | What it does |
+|---|---|---|
+| Stack size format | x 3 | `Prayer potion(4) x 3` or `Prayer potion(4) (3)` |
+| Show item icons | on | Icon next to the name on the ground |
+| Icon size | 16 px | Icon height |
+| Icons only until hovered | off | Only icons on the ground; hover or hold the hotkey for text |
+| Tile value total | on | Total line above tiles with 2+ items |
+| Total minimum value | 0 | Hide totals below this value |
+
 Tile highlight
 
 | Setting | Default | What it does |
@@ -27,33 +40,29 @@ Tile highlight
 | Item colour fill opacity | 50 | 0–255, applies to item-colour fill |
 | Custom fill colour | black, 50 alpha | Used when fill colour is custom |
 
-Despawn timer and tile totals
+Despawn timer
 
 | Setting | Default | What it does |
 |---|---|---|
+| Despawn timer | Off | Off, pie, ring, bar, ticks or seconds |
+| Show timer | Always | Always, public or pulsing only, or under N ticks left |
+| Show timer under | 100 ticks | Threshold for the under-N-ticks mode |
 | Pulse under | 15 s | Ring and bar pulse with this much time left, 0 disables |
 | Pulse colour | red | Colour while pulsing |
 | Ring / bar thickness | 2 px | Thickness of the ring or bar |
 | Bar width | Icon and name | Bar spans icon and name, or just the icon |
-| Show timer | Always | Always, public or pulsing only, or under N ticks left |
-| Show timer under | 100 ticks | Threshold for the under-N-ticks mode |
-| Tile value total | on | Total line above tiles with 2+ items |
-| Total minimum value | 0 | Hide totals below this value |
 
-Icons and names
+Renames and menu
 
 | Setting | Default | What it does |
 |---|---|---|
-| Show item icons | on | Icon next to the name on the ground |
-| Icon size | 16 px | Icon height |
-| Icons only until hovered | off | Only icons on the ground; hover or hold the hotkey for text |
-| Custom names in menu | on | Use renamed items in the right-click menu too |
-| Stack size format | x 3 | `Prayer potion(4) x 3` or `Prayer potion(4) (3)` |
-| Group doses and charges | on | `(4)`, `(3)`... suffixes share one rename |
+| Group doses and charges | on | `(4)`, `(3)`... suffixes share one rename, each keeps its real dose |
 | Item renames | empty | Your renames as `Real name=Custom name` lines, written by the Rename menu |
+| Custom names in menu | on | Use renamed items in the right-click menu too |
 
 ## Changelog
 
+- 1.3.1: settings regrouped into themed sections (overlay, colours, tiles, timer, renames, menu, lootbeams, notifications, hotkey)
 - 1.3.0: icons-only mode with hover to expand, bar width setting (icon only)
 - 1.2.0: bar despawn timer, "Show timer" visibility rule (always / public or pulsing / under N ticks)
 - 1.1.2: grouped renames keep the item's real dose ("Ovl (2)" stays a 2-dose) on the ground and in the right-click menu

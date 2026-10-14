@@ -241,10 +241,22 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "compactQuantity",
+		name = "Stack size next to icon",
+		description = "In icons-only mode, draw the stack size after the icon ('x 3' or '(3)' per the stack size format) in the item's colour.",
+		position = 7,
+		section = overlaySection
+	)
+	default boolean compactQuantity()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "showTileTotal",
 		name = "Tile value total",
 		description = "When two or more items share a tile, draw a total value line above them, coloured by value tier.",
-		position = 7,
+		position = 8,
 		section = overlaySection
 	)
 	default boolean showTileTotal()
@@ -256,7 +268,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileTotalMinimum",
 		name = "Total minimum value",
 		description = "Only show the tile total when it is at least this much.",
-		position = 8,
+		position = 9,
 		section = overlaySection
 	)
 	default int tileTotalMinimum()

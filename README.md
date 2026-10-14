@@ -22,6 +22,7 @@ Ground overlay
 | Show item icons | on | Icon next to the name on the ground |
 | Icon size | 16 px | Icon height |
 | Icons only until hovered | off | Only icons on the ground; hover or hold the hotkey for text |
+| Stack size next to icon | on | Icons-only mode shows `x 3` after the icon in the item colour |
 | Tile value total | on | Total line above tiles with 2+ items |
 | Total minimum value | 0 | Hide totals below this value |
 
@@ -62,6 +63,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.3.2: icons-only mode shows the stack size next to the icon
 - 1.3.1: settings regrouped into themed sections (overlay, colours, tiles, timer, renames, menu, lootbeams, notifications, hotkey)
 - 1.3.0: icons-only mode with hover to expand, bar width setting (icon only)
 - 1.2.0: bar despawn timer, "Show timer" visibility rule (always / public or pulsing / under N ticks)

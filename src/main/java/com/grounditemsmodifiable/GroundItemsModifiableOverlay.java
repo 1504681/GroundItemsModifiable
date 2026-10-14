@@ -271,6 +271,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 		// Compact mode: a tile is expanded while the mouse is over what it drew last frame
 		final boolean compact = config.compactMode() && showIcons;
+		final boolean compactQuantity = config.compactQuantity();
 		final BarWidth barWidth = config.barWidth();
 		hoveredTiles.clear();
 		if (compact)
@@ -300,15 +301,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 			if (item.getQuantity() > 1)
 			{
-				final String stack = QuantityFormatter.quantityToStackSize(item.getQuantity());
-				if (quantityFormat == QuantityFormat.TIMES)
-				{
-					itemStringBuilder.append(" x ").append(stack);
-				}
-				else
-				{
-					itemStringBuilder.append(" (").append(stack).append(')');
-				}
+				itemStringBuilder.append(' ').append(formatStack(item.getQuantity(), quantityFormat));
 			}
 
 			if (item.getId() != ItemID.COINS)
@@ -379,12 +372,16 @@ public class GroundItemsModifiableOverlay extends Overlay
 			final int textWidth = fm.stringWidth(itemString);
 			// collapsed icons stack with their own gap so they do not overlap
 			final int lineGap = collapsed ? Math.max(STRING_GAP, iconHeight + 2) : STRING_GAP;
+			// collapsed stacks keep a short "x 3" label after the icon
+			final String collapsedLabel = collapsed && compactQuantity && item.getQuantity() > 1
+				? formatStack(item.getQuantity(), quantityFormat) : null;
+			final int collapsedLabelSpan = collapsedLabel != null ? ICON_GAP + fm.stringWidth(collapsedLabel) : 0;
 
 			// getCanvasTextLocation centres the text on the tile; shift it so icon + text is centred instead
 			final int textX = textPoint.getX() + iconSpan / 2;
 			final int textY = textPoint.getY() - (lineGap * offset);
-			// collapsed: icon alone, centred on the tile; otherwise icon sits left of the text
-			final int iconX = collapsed ? textPoint.getX() + textWidth / 2 - iconWidth / 2 : textX - iconSpan;
+			// collapsed: icon (plus its stack label) centred on the tile; otherwise icon sits left of the text
+			final int iconX = collapsed ? textPoint.getX() + textWidth / 2 - (iconWidth + collapsedLabelSpan) / 2 : textX - iconSpan;
 			final int iconY = textY - (fm.getAscent() + iconHeight) / 2;
 
 			if (plugin.isHotKeyPressed())
@@ -505,13 +502,21 @@ public class GroundItemsModifiableOverlay extends Overlay
 			if (compact)
 			{
 				final Rectangle bounds = collapsed
-					? new Rectangle(iconX - 2, iconY - 2, iconWidth + 4, iconHeight + 4)
+					? new Rectangle(iconX - 2, Math.min(iconY, textY - fm.getAscent()) - 2, iconWidth + collapsedLabelSpan + 4, Math.max(iconHeight, fm.getHeight()) + 4)
 					: new Rectangle(textX - iconSpan - 2, textY - fm.getAscent() - 2, iconSpan + textWidth + 4, fm.getHeight() + 4);
 				tileHoverBounds.merge(worldPoint, bounds, Rectangle::union);
 			}
 
 			if (collapsed)
 			{
+				if (collapsedLabel != null)
+				{
+					textComponent.setText(collapsedLabel);
+					textComponent.setColor(color);
+					textComponent.setOutline(outline);
+					textComponent.setPosition(new java.awt.Point(iconX + iconWidth + ICON_GAP, textY));
+					textComponent.render(graphics);
+				}
 				continue;
 			}
 
@@ -1000,4 +1005,10 @@ public class GroundItemsModifiableOverlay extends Overlay
 		}
 
 	}
+	private static String formatStack(int quantity, QuantityFormat format)
+	{
+		final String stack = QuantityFormatter.quantityToStackSize(quantity);
+		return format == QuantityFormat.TIMES ? "x " + stack : "(" + stack + ")";
+	}
+
 }

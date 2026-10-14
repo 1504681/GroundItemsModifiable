@@ -54,6 +54,17 @@ public interface GroundItemsModifiableConfig extends Config
 	String GROUP = "grounditemsmodifiable";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
+	@ConfigItem(
+		keyName = "exclusiveWithCore",
+		name = "Replace built-in Ground Items",
+		description = "Turn the built-in Ground Items plugin off while this one is on, and turn this one off if you switch the built-in plugin back on.",
+		position = -1
+	)
+	default boolean exclusiveWithCore()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Item lists",
 		description = "Which items are highlighted, hidden or shown at all.",

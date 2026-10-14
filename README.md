@@ -8,7 +8,7 @@ A fork of RuneLite's built-in Ground Items plugin with three additions:
 - **Ring and bar despawn timers.** Set *Despawn timer* to **Ring** (drains clockwise around the icon) or **Bar** (a thin bar under the icon and name that shrinks from the right). Under a configurable number of seconds both pulse in a colour of your choice, faster in the last five seconds. **Show timer** can hide any timer until the item is public or pulsing, or until fewer than N ticks remain; holding the hotkey always shows every timer.
 - **Tile value total.** When two or more items share a tile, one extra line above the stack shows their summed value, coloured by your value tiers.
 
-Everything else (highlight/hidden lists, value tiers, lootbeams, despawn timers, ownership filter, menu recolouring, per-item colours) works as in the original plugin. On first start the plugin copies all of your Ground Items settings, so disable the built-in Ground Items plugin and this one picks up where it left off.
+Everything else (highlight/hidden lists, value tiers, lootbeams, despawn timers, ownership filter, menu recolouring, per-item colours) works as in the original plugin. On first start the plugin copies all of your Ground Items settings (highlight and hidden lists, colours, value tiers, everything) and turns the built-in Ground Items plugin off, so it picks up where that one left off. Switching the built-in plugin back on turns this one off; **Replace built-in Ground Items** at the top of the settings disables that. `::importgrounditems` in chat copies the built-in settings again, replacing what is set here.
 
 ## Settings
 
@@ -63,6 +63,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.4.0: turns the built-in Ground Items plugin off when this one is on (and the other way round); `::importgrounditems` re-copies its settings
 - 1.3.2: icons-only mode shows the stack size next to the icon
 - 1.3.1: settings regrouped into themed sections (overlay, colours, tiles, timer, renames, menu, lootbeams, notifications, hotkey)
 - 1.3.0: icons-only mode with hover to expand, bar width setting (icon only)

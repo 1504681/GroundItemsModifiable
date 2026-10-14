@@ -57,6 +57,7 @@ import javax.swing.SwingUtilities;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import lombok.Value;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
@@ -89,12 +90,15 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.PluginChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.chatbox.ChatboxPanelManager;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.input.MouseManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginInstantiationException;
+import net.runelite.client.plugins.PluginManager;
 import com.grounditemsmodifiable.config.HighlightTier;
 import com.grounditemsmodifiable.config.ItemHighlightMode;
 import com.grounditemsmodifiable.config.MenuHighlightMode;
@@ -112,6 +116,7 @@ import net.runelite.client.util.RSTimeUnit;
 import net.runelite.client.util.Text;
 import net.runelite.client.util.WildcardMatcher;
 
+@Slf4j
 @PluginDescriptor(
 	name = "Ground Items Modifiable",
 	description = "Ground Items with custom tile fill and outline colours, renameable items and item icons drawn on the ground",
@@ -119,7 +124,7 @@ import net.runelite.client.util.WildcardMatcher;
 )
 public class GroundItemsModifiablePlugin extends Plugin
 {
-	static final String VERSION = "1.3.2";
+	static final String VERSION = "1.4.0";
 	private static final String HIGHLIGHT_COLOR_PREFIX = "highlight_";
 	// pre-1.1 storage of renames, migrated into the renames text box on start
 	private static final String LEGACY_NAME_PREFIX = "name_";
@@ -211,6 +216,15 @@ public class GroundItemsModifiablePlugin extends Plugin
 	@Inject
 	private ChatboxPanelManager chatboxPanelManager;
 
+	@Inject
+	private PluginManager pluginManager;
+
+	// the plugin this one replaces; matched by name so there is no hard link to the core class
+	private static final String CORE_PLUGIN_CLASS = "net.runelite.client.plugins.grounditems.GroundItemsPlugin";
+	// core plugins that load after this one during client start are turned off instead of turning this one off
+	private static final long STARTUP_GRACE_MS = 15_000;
+	private long startedAt;
+
 	@Getter
 	private final Table<WorldPoint, Integer, GroundItem> collectedGroundItems = HashBasedTable.create();
 	private List<PriceHighlight> priceChecks = ImmutableList.of();
@@ -228,9 +242,86 @@ public class GroundItemsModifiablePlugin extends Plugin
 		overlayManager.add(overlay);
 		mouseManager.registerMouseListener(mouseAdapter);
 		keyManager.registerKeyListener(hotkeyListener);
-		importCoreConfig();
+		importCoreConfig(false);
 		clientThread.invoke(this::migrateLegacyRenames);
 		executor.execute(this::reset);
+		startedAt = System.currentTimeMillis();
+		if (config.exclusiveWithCore())
+		{
+			disableCorePlugin();
+		}
+	}
+
+	private Plugin corePlugin()
+	{
+		for (Plugin plugin : pluginManager.getPlugins())
+		{
+			if (CORE_PLUGIN_CLASS.equals(plugin.getClass().getName()))
+			{
+				return plugin;
+			}
+		}
+		return null;
+	}
+
+	/** Turns the built-in Ground Items plugin off so the two do not draw over each other. */
+	private void disableCorePlugin()
+	{
+		final Plugin core = corePlugin();
+		if (core == null || !pluginManager.isPluginEnabled(core))
+		{
+			return;
+		}
+		// plugins start and stop on the Swing thread
+		SwingUtilities.invokeLater(() ->
+		{
+			try
+			{
+				pluginManager.setPluginEnabled(core, false);
+				pluginManager.stopPlugin(core);
+				clientThread.invokeLater(() -> chatMessage("Ground Items Modifiable turned the built-in Ground Items plugin off."));
+			}
+			catch (PluginInstantiationException e)
+			{
+				log.warn("Could not stop the built-in Ground Items plugin", e);
+			}
+		});
+	}
+
+	private void disableSelf()
+	{
+		SwingUtilities.invokeLater(() ->
+		{
+			try
+			{
+				pluginManager.setPluginEnabled(this, false);
+				pluginManager.stopPlugin(this);
+			}
+			catch (PluginInstantiationException e)
+			{
+				log.warn("Could not stop Ground Items Modifiable", e);
+			}
+		});
+	}
+
+	@Subscribe
+	public void onPluginChanged(PluginChanged event)
+	{
+		if (!config.exclusiveWithCore() || !event.isLoaded()
+			|| !CORE_PLUGIN_CLASS.equals(event.getPlugin().getClass().getName()))
+		{
+			return;
+		}
+		if (System.currentTimeMillis() - startedAt < STARTUP_GRACE_MS)
+		{
+			// both were enabled when the client started: this plugin wins
+			disableCorePlugin();
+		}
+		else
+		{
+			// the user switched the built-in plugin back on: step aside
+			disableSelf();
+		}
 	}
 
 	@Override
@@ -256,13 +347,18 @@ public class GroundItemsModifiablePlugin extends Plugin
 	 * First run only: copy every setting of the built-in Ground Items plugin (lists, colours, thresholds,
 	 * per-item colours) so this plugin starts out looking exactly like the one it replaces.
 	 */
-	private void importCoreConfig()
+	/**
+	 * Copies the built-in Ground Items settings into this plugin's config group. Runs once on first start;
+	 * {@code overwrite} re-runs it from the ::importgrounditems command and replaces values already set here.
+	 */
+	private int importCoreConfig(boolean overwrite)
 	{
 		final String group = GroundItemsModifiableConfig.GROUP;
-		if (configManager.getConfiguration(group, IMPORTED_KEY) != null)
+		if (!overwrite && configManager.getConfiguration(group, IMPORTED_KEY) != null)
 		{
-			return;
+			return 0;
 		}
+		int copied = 0;
 
 		final String prefix = CORE_GROUP + ".";
 		for (String wholeKey : configManager.getConfigurationKeys(prefix))
@@ -274,13 +370,15 @@ public class GroundItemsModifiablePlugin extends Plugin
 			}
 
 			final String value = configManager.getConfiguration(CORE_GROUP, key);
-			if (value != null && configManager.getConfiguration(group, key) == null)
+			if (value != null && (overwrite || configManager.getConfiguration(group, key) == null))
 			{
 				configManager.setConfiguration(group, key, value);
+				copied++;
 			}
 		}
 
 		configManager.setConfiguration(group, IMPORTED_KEY, true);
+		return copied;
 	}
 
 	@Subscribe
@@ -628,6 +726,10 @@ public class GroundItemsModifiablePlugin extends Plugin
 				break;
 			case "importrenames":
 				importRenames();
+				break;
+			case "importgrounditems":
+				final int copied = importCoreConfig(true);
+				chatMessage("Copied " + copied + " setting" + (copied == 1 ? "" : "s") + " from the built-in Ground Items plugin.");
 				break;
 			default:
 				break;

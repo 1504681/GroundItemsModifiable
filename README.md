@@ -3,7 +3,7 @@
 A fork of RuneLite's built-in Ground Items plugin with three additions:
 
 - **Tile fill and outline you control.** Mark the whole tile or just a circle in its centre. Tiles can use the item's colour or one custom colour for the outline and the fill, with separate opacity and outline width. One polygon per tile; the highlighted item on a tile decides its colour.
-- **Rename ground items.** Hold the hotkey (ALT by default), right-click an item and pick **Rename**. The custom name is used on the ground, in the right-click menu and when matching your highlight/hidden lists. **Reset name** or an empty rename restores the real name. Hotkey + right-click also offers **Renames > Export to clipboard** and **Import from clipboard** (or `::exportrenames` / `::importrenames` in chat); import merges into what you have. `*` works as a wildcard (`Grimy *=Herb`). With **Group doses and charges** on, renaming `Prayer potion(4)` covers the (3), (2) and (1) too.
+- **Rename ground items.** Hold the hotkey (ALT by default), right-click an item and pick **Rename**. The custom name is used on the ground, in the right-click menu and when matching your highlight/hidden lists. **Reset name** or an empty rename restores the real name. Hotkey + right-click also offers **Renames > Export to clipboard** and **Import from clipboard** (or `::exportrenames` / `::importrenames` in chat); import merges into what you have. `*` works as a wildcard (`Grimy *=Herb`). With **Group doses and charges** on, renaming `Prayer potion(4)` to `PPot` covers every dose, and each item keeps its real dose: `PPot(3)`, `PPot(2)`, on the ground and in the menu.
 - **Item icons on the ground.** Every ground item label gets its icon drawn next to it, on by default.
 - **Ring despawn timer.** Set *Despawn timer* to **Ring** and the timer drains clockwise around the icon (or a small ring left of the name with icons off). Under a configurable number of seconds it pulses in a colour of your choice, faster in the last five seconds.
 - **Tile value total.** When two or more items share a tile, one extra line above the stack shows their summed value, coloured by your value tiers.
@@ -50,6 +50,7 @@ Icons and names
 
 ## Changelog
 
+- 1.1.2: grouped renames keep the item's real dose ("Ovl (2)" stays a 2-dose) on the ground and in the right-click menu
 - 1.1.1: stack size shown as "x 3" instead of "(3)", with a format setting
 - 1.1.0: rename export/import via clipboard, wildcard renames, dose grouping, ring despawn timer with pulse, tile value totals, circle tile marks
 - 1.0.0: initial release

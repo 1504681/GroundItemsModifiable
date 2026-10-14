@@ -46,6 +46,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
@@ -118,7 +119,7 @@ import net.runelite.client.util.WildcardMatcher;
 )
 public class GroundItemsModifiablePlugin extends Plugin
 {
-	static final String VERSION = "1.1.1";
+	static final String VERSION = "1.1.2";
 	private static final String HIGHLIGHT_COLOR_PREFIX = "highlight_";
 	// pre-1.1 storage of renames, migrated into the renames text box on start
 	private static final String LEGACY_NAME_PREFIX = "name_";
@@ -1050,25 +1051,41 @@ public class GroundItemsModifiablePlugin extends Plugin
 
 	/**
 	 * Custom name for a real item name, or null when it has none. Exact lines win over wildcard lines.
+	 * With dose grouping on, the item's own dose suffix is put back on the custom name, so a rename of
+	 * "Overload (4)" to "Ovl" shows "Ovl (2)" on a 2-dose and "Ovl (4)" on a 4-dose.
 	 */
 	String resolveRename(String realName)
 	{
 		final String key = renameKey(realName).toLowerCase();
-		final String exact = renames.get(key);
-		if (exact != null)
+		String custom = renames.get(key);
+		if (custom == null)
 		{
-			return exact;
-		}
-
-		for (Map.Entry<String, String> wildcard : wildcardRenames)
-		{
-			if (WildcardMatcher.matches(wildcard.getKey(), key))
+			for (Map.Entry<String, String> wildcard : wildcardRenames)
 			{
-				return wildcard.getValue();
+				if (WildcardMatcher.matches(wildcard.getKey(), key))
+				{
+					custom = wildcard.getValue();
+					break;
+				}
 			}
 		}
 
-		return null;
+		if (custom == null)
+		{
+			return null;
+		}
+
+		if (config.groupDoses())
+		{
+			final Matcher dose = DOSE_SUFFIX.matcher(realName);
+			if (dose.find())
+			{
+				// drop any dose the user typed into the custom name, then append the real one
+				custom = DOSE_SUFFIX.matcher(custom).replaceFirst("") + dose.group();
+			}
+		}
+
+		return custom;
 	}
 
 	/**

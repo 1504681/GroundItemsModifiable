@@ -723,7 +723,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "groupDoses",
 		name = "Group doses and charges",
-		description = "Renaming 'Prayer potion(4)' renames every dose: the (4), (3), (2), (1) suffix is ignored when matching.",
+		description = "Renaming 'Prayer potion(4)' renames every dose. The item's real dose is appended to the custom name, so you get 'PPot(3)', 'PPot(2)' and so on.",
 		position = 3,
 		section = iconSection
 	)

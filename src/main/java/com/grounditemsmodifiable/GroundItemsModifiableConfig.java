@@ -56,7 +56,7 @@ public interface GroundItemsModifiableConfig extends Config
 
 	@ConfigSection(
 		name = "Item lists",
-		description = "The highlighted and hidden item lists.",
+		description = "Which items are highlighted, hidden or shown at all.",
 		position = 0
 	)
 	String itemLists = "itemLists";
@@ -103,7 +103,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "showHighlightedOnly",
 		name = "Show highlighted items only",
 		description = "Configures whether or not to draw items only on your highlighted list.",
-		position = 2
+		position = 2,
+		section = itemLists
 	)
 	default boolean showHighlightedOnly()
 	{
@@ -114,7 +115,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "dontHideUntradeables",
 		name = "Do not hide untradeables",
 		description = "Configures whether or not untradeable items ignore hiding under settings.",
-		position = 3
+		position = 3,
+		section = itemLists
 	)
 	default boolean dontHideUntradeables()
 	{
@@ -122,76 +124,42 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "showMenuItemQuantities",
-		name = "Show menu item quantities",
-		description = "Configures whether or not to show the item quantities in the menu.",
-		position = 4
+		keyName = "hideUnderValue",
+		name = "Hide under value",
+		description = "Configures hidden ground items under both GE and HA value.",
+		position = 4,
+		section = itemLists
 	)
-	default boolean showMenuItemQuantities()
+	default int getHideUnderValue()
 	{
-		return true;
+		return 0;
 	}
 
 	@ConfigItem(
-		keyName = "recolorMenuHiddenItems",
-		name = "Recolor menu hidden items",
-		description = "Configures whether or not hidden items in right-click menu will be recolored.",
-		position = 5
+		keyName = OWNERSHIP_FILTER_MODE,
+		name = "Ownership filter",
+		description = "Show all items, takeable items, or only your or your group's drops.",
+		position = 5,
+		section = itemLists
 	)
-	default boolean recolorMenuHiddenItems()
+	default OwnershipFilterMode ownershipFilterMode()
 	{
-		return false;
+		return OwnershipFilterMode.ALL;
 	}
 
-	@ConfigItem(
-		keyName = "deprioritizeHiddenItems",
-		name = "Deprioritize menu hidden items",
-		description = "Depriotizies the menu options for items which are hidden, requiring a right-click to pick up.",
-		position = 5
+	@ConfigSection(
+		name = "Ground overlay",
+		description = "What is drawn on the ground for each item.",
+		position = 1
 	)
-	default boolean deprioritizeHiddenItems()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		keyName = "notifyHighlightedDrops",
-		name = "Notify for highlighted drops",
-		description = "Configures whether or not to notify for drops on your highlighted list.",
-		position = 7
-	)
-	default boolean notifyHighlightedDrops()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		keyName = "notifyTier",
-		name = "Notify tier",
-		description = "Configures which price tiers will trigger a notification on drop.",
-		position = 8
-	)
-	default HighlightTier notifyTier()
-	{
-		return HighlightTier.OFF;
-	}
-
-	@ConfigItem(
-		keyName = "priceDisplayMode",
-		name = "Price display mode",
-		description = "Configures which price types are shown alongside ground item name.",
-		position = 9
-	)
-	default PriceDisplayMode priceDisplayMode()
-	{
-		return PriceDisplayMode.BOTH;
-	}
+	String overlaySection = "overlaySection";
 
 	@ConfigItem(
 		keyName = "itemHighlightMode",
 		name = "Item highlight mode",
 		description = "Configures how ground items will be highlighted.",
-		position = 10
+		position = 0,
+		section = overlaySection
 	)
 	default ItemHighlightMode itemHighlightMode()
 	{
@@ -199,44 +167,117 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "menuHighlightMode",
-		name = "Menu highlight mode",
-		description = "Configures what to highlight in right-click menu.",
-		position = 11
+		keyName = "priceDisplayMode",
+		name = "Price display mode",
+		description = "Configures which price types are shown alongside ground item name.",
+		position = 1,
+		section = overlaySection
 	)
-	default MenuHighlightMode menuHighlightMode()
+	default PriceDisplayMode priceDisplayMode()
 	{
-		return MenuHighlightMode.NAME;
+		return PriceDisplayMode.BOTH;
 	}
 
 	@ConfigItem(
-		keyName = "highlightValueCalculation",
-		name = "Highlight value calculation",
-		description = "Configures which coin value is used to determine highlight color.",
-		position = 12
+		keyName = "quantityFormat",
+		name = "Stack size format",
+		description = "How the stack size is written after the name: 'Prayer potion(4) x 3' or 'Prayer potion(4) (3)'.",
+		position = 2,
+		section = overlaySection
 	)
-	default ValueCalculationMode valueCalculationMode()
+	default QuantityFormat quantityFormat()
 	{
-		return ValueCalculationMode.HIGHEST;
+		return QuantityFormat.TIMES;
 	}
 
 	@ConfigItem(
-		keyName = "hideUnderValue",
-		name = "Hide under value",
-		description = "Configures hidden ground items under both GE and HA value.",
-		position = 13
+		keyName = "textOutline",
+		name = "Text outline",
+		description = "Use an outline around text instead of a text shadow.",
+		position = 3,
+		section = overlaySection
 	)
-	default int getHideUnderValue()
+	default boolean textOutline()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "showItemIcons",
+		name = "Show item icons",
+		description = "Draw the item's icon next to its name on the ground.",
+		position = 4,
+		section = overlaySection
+	)
+	default boolean showItemIcons()
+	{
+		return true;
+	}
+
+	@Range(min = 8, max = 48)
+	@ConfigItem(
+		keyName = "iconSize",
+		name = "Icon size",
+		description = "Height of the ground icons in pixels.",
+		position = 5,
+		section = overlaySection
+	)
+	@Units(Units.PIXELS)
+	default int iconSize()
+	{
+		return 16;
+	}
+
+	@ConfigItem(
+		keyName = "compactMode",
+		name = "Icons only until hovered",
+		description = "Draw only the icon on the ground. Hover a tile's icons or hold the hotkey to see names, prices and totals. Needs item icons on.",
+		position = 6,
+		section = overlaySection
+	)
+	default boolean compactMode()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "showTileTotal",
+		name = "Tile value total",
+		description = "When two or more items share a tile, draw a total value line above them, coloured by value tier.",
+		position = 7,
+		section = overlaySection
+	)
+	default boolean showTileTotal()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "tileTotalMinimum",
+		name = "Total minimum value",
+		description = "Only show the tile total when it is at least this much.",
+		position = 8,
+		section = overlaySection
+	)
+	default int tileTotalMinimum()
 	{
 		return 0;
 	}
+
+	@ConfigSection(
+		name = "Colours and value tiers",
+		description = "Item colours and the price thresholds behind them.",
+		position = 2
+	)
+	String colorSection = "colorSection";
 
 	@Alpha
 	@ConfigItem(
 		keyName = "defaultColor",
 		name = "Default items",
 		description = "Configures the color for default, non-highlighted items.",
-		position = 14
+		position = 0,
+		section = colorSection
 	)
 	default Color defaultColor()
 	{
@@ -248,7 +289,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "highlightedColor",
 		name = "Highlighted items",
 		description = "Configures the color for highlighted items.",
-		position = 15
+		position = 1,
+		section = colorSection
 	)
 	default Color highlightedColor()
 	{
@@ -260,11 +302,24 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "hiddenColor",
 		name = "Hidden items",
 		description = "Configures the color for hidden items in right-click menu and when holding ALT.",
-		position = 16
+		position = 2,
+		section = colorSection
 	)
 	default Color hiddenColor()
 	{
 		return Color.GRAY;
+	}
+
+	@ConfigItem(
+		keyName = "highlightValueCalculation",
+		name = "Highlight value calculation",
+		description = "Configures which coin value is used to determine highlight color.",
+		position = 3,
+		section = colorSection
+	)
+	default ValueCalculationMode valueCalculationMode()
+	{
+		return ValueCalculationMode.HIGHEST;
 	}
 
 	@Alpha
@@ -272,7 +327,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "lowValueColor",
 		name = "Low value items",
 		description = "Configures the color for low value items.",
-		position = 17
+		position = 4,
+		section = colorSection
 	)
 	default Color lowValueColor()
 	{
@@ -283,7 +339,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "lowValuePrice",
 		name = "Low value price",
 		description = "Configures the start price for low value items.",
-		position = 18
+		position = 5,
+		section = colorSection
 	)
 	default int lowValuePrice()
 	{
@@ -295,7 +352,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "mediumValueColor",
 		name = "Medium value items",
 		description = "Configures the color for medium value items.",
-		position = 19
+		position = 6,
+		section = colorSection
 	)
 	default Color mediumValueColor()
 	{
@@ -306,7 +364,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "mediumValuePrice",
 		name = "Medium value price",
 		description = "Configures the start price for medium value items.",
-		position = 20
+		position = 7,
+		section = colorSection
 	)
 	default int mediumValuePrice()
 	{
@@ -318,7 +377,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "highValueColor",
 		name = "High value items",
 		description = "Configures the color for high value items.",
-		position = 21
+		position = 8,
+		section = colorSection
 	)
 	default Color highValueColor()
 	{
@@ -329,7 +389,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "highValuePrice",
 		name = "High value price",
 		description = "Configures the start price for high value items.",
-		position = 22
+		position = 9,
+		section = colorSection
 	)
 	default int highValuePrice()
 	{
@@ -341,7 +402,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "insaneValueColor",
 		name = "Insane value items",
 		description = "Configures the color for insane value items.",
-		position = 23
+		position = 10,
+		section = colorSection
 	)
 	default Color insaneValueColor()
 	{
@@ -352,117 +414,18 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "insaneValuePrice",
 		name = "Insane value price",
 		description = "Configures the start price for insane value items.",
-		position = 24
+		position = 11,
+		section = colorSection
 	)
 	default int insaneValuePrice()
 	{
 		return 10000000;
 	}
 
-	@ConfigItem(
-		keyName = OWNERSHIP_FILTER_MODE,
-		name = "Ownership filter",
-		description = "Show all items, takeable items, or only your or your group's drops.",
-		position = 25
-	)
-	default OwnershipFilterMode ownershipFilterMode()
-	{
-		return OwnershipFilterMode.ALL;
-	}
-
-	@ConfigItem(
-		keyName = "doubleTapDelay",
-		name = "Double-tap delay",
-		description = "Delay for the double-tap ALT to hide ground items. 0 to disable.",
-		position = 26
-	)
-	@Units(Units.MILLISECONDS)
-	default int doubleTapDelay()
-	{
-		return 250;
-	}
-
-	@ConfigItem(
-		keyName = "collapseEntries",
-		name = "Collapse ground item menu",
-		description = "Collapses ground item menu entries together and appends count.",
-		position = 27
-	)
-	default boolean collapseEntries()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		keyName = "groundItemTimers",
-		name = "Despawn timer",
-		description = "Shows despawn timers for items you've dropped and received as loot.",
-		position = 28
-	)
-	default DespawnTimerMode groundItemTimers()
-	{
-		return DespawnTimerMode.OFF;
-	}
-
-	@ConfigItem(
-		keyName = "textOutline",
-		name = "Text outline",
-		description = "Use an outline around text instead of a text shadow.",
-		position = 29
-	)
-	default boolean textOutline()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		keyName = "showLootbeamForHighlighted",
-		name = "Highlighted item lootbeams",
-		description = "Configures lootbeams to show for all highlighted items.",
-		position = 30
-	)
-	default boolean showLootbeamForHighlighted()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		keyName = "showLootbeamTier",
-		name = "Lootbeam tier",
-		description = "Configures which price tiers will trigger a lootbeam.",
-		position = 31
-	)
-	default HighlightTier showLootbeamTier()
-	{
-		return HighlightTier.HIGH;
-	}
-
-	@ConfigItem(
-		keyName = "lootbeamStyle",
-		name = "Lootbeam style",
-		description = "Style of lootbeam to use.",
-		position = 32
-	)
-	default Lootbeam.Style lootbeamStyle()
-	{
-		return Lootbeam.Style.MODERN;
-	}
-
-	@ConfigItem(
-		keyName = "hotkey",
-		name = "Hotkey",
-		description = "Configures the hotkey used by the Ground Items plugin.",
-		position = 33
-	)
-	default Keybind hotkey()
-	{
-		return Keybind.ALT;
-	}
-
 	@ConfigSection(
 		name = "Tile highlight",
-		description = "How tiles containing ground items are drawn.",
-		position = 40
+		description = "How tiles containing ground items are marked.",
+		position = 3
 	)
 	String tileSection = "tileSection";
 
@@ -594,19 +557,57 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigSection(
-		name = "Despawn timer and tile totals",
-		description = "Ring and bar despawn timers, when timers are shown, and the per-tile value total.",
-		position = 42
+		name = "Despawn timer",
+		description = "Timer style, when it is shown, and the ring/bar pulse.",
+		position = 4
 	)
-	String ringSection = "ringSection";
+	String timerSection = "timerSection";
+
+	@ConfigItem(
+		keyName = "groundItemTimers",
+		name = "Despawn timer",
+		description = "Shows despawn timers for items you've dropped and received as loot.",
+		position = 0,
+		section = timerSection
+	)
+	default DespawnTimerMode groundItemTimers()
+	{
+		return DespawnTimerMode.OFF;
+	}
+
+	@ConfigItem(
+		keyName = "timerVisibility",
+		name = "Show timer",
+		description = "Always, only once the item is public (yellow) or pulsing, or only under a number of ticks left. Holding the hotkey always shows every timer.",
+		position = 1,
+		section = timerSection
+	)
+	default TimerVisibility timerVisibility()
+	{
+		return TimerVisibility.ALWAYS;
+	}
+
+	@Range(min = 1, max = 2000)
+	@ConfigItem(
+		keyName = "timerShowTicks",
+		name = "Show timer under",
+		description = "Ticks left at which the timer appears when 'Show timer' is set to under N ticks.",
+		position = 2,
+		section = timerSection
+	)
+	@Units(Units.TICKS)
+	default int timerShowTicks()
+	{
+		return 100;
+	}
 
 	@Range(min = 0, max = 120)
 	@ConfigItem(
 		keyName = "ringPulseSeconds",
 		name = "Pulse under",
 		description = "Ring and bar timers pulse once this many seconds are left. 0 disables the pulse.",
-		position = 0,
-		section = ringSection
+		position = 3,
+		section = timerSection
 	)
 	@Units(Units.SECONDS)
 	default int ringPulseSeconds()
@@ -619,8 +620,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "ringPulseColor",
 		name = "Pulse colour",
 		description = "Colour of the ring or bar while it is pulsing.",
-		position = 1,
-		section = ringSection
+		position = 4,
+		section = timerSection
 	)
 	default Color ringPulseColor()
 	{
@@ -632,8 +633,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "ringWidth",
 		name = "Ring / bar thickness",
 		description = "Thickness of the ring or bar timer in pixels.",
-		position = 2,
-		section = ringSection
+		position = 5,
+		section = timerSection
 	)
 	@Units(Units.PIXELS)
 	default int ringWidth()
@@ -645,139 +646,27 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "barWidth",
 		name = "Bar width",
 		description = "Bar timer spans the icon and the name, or just the icon.",
-		position = 3,
-		section = ringSection
+		position = 6,
+		section = timerSection
 	)
 	default BarWidth barWidth()
 	{
 		return BarWidth.FULL;
 	}
 
-	@ConfigItem(
-		keyName = "timerVisibility",
-		name = "Show timer",
-		description = "Always, only once the item is public (yellow) or pulsing, or only under a number of ticks left. Holding the hotkey always shows every timer.",
-		position = 10,
-		section = ringSection
-	)
-	default TimerVisibility timerVisibility()
-	{
-		return TimerVisibility.ALWAYS;
-	}
-
-	@Range(min = 1, max = 2000)
-	@ConfigItem(
-		keyName = "timerShowTicks",
-		name = "Show timer under",
-		description = "Ticks left at which the timer appears when 'Show timer' is set to under N ticks.",
-		position = 11,
-		section = ringSection
-	)
-	@Units(Units.TICKS)
-	default int timerShowTicks()
-	{
-		return 100;
-	}
-
-	@ConfigItem(
-		keyName = "showTileTotal",
-		name = "Tile value total",
-		description = "When two or more items share a tile, draw a total value line above them, coloured by value tier.",
-		position = 20,
-		section = ringSection
-	)
-	default boolean showTileTotal()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		keyName = "tileTotalMinimum",
-		name = "Total minimum value",
-		description = "Only show the tile total when it is at least this much.",
-		position = 21,
-		section = ringSection
-	)
-	default int tileTotalMinimum()
-	{
-		return 0;
-	}
-
 	@ConfigSection(
-		name = "Icons and names",
-		description = "Item icons drawn on the ground and custom item names.",
-		position = 41
+		name = "Renames",
+		description = "Custom item names. Rename an item by holding the hotkey and right-clicking it.",
+		position = 5
 	)
-	String iconSection = "iconSection";
-
-	@ConfigItem(
-		keyName = "showItemIcons",
-		name = "Show item icons",
-		description = "Draw the item's icon next to its name on the ground.",
-		position = 0,
-		section = iconSection
-	)
-	default boolean showItemIcons()
-	{
-		return true;
-	}
-
-	@Range(min = 8, max = 48)
-	@ConfigItem(
-		keyName = "iconSize",
-		name = "Icon size",
-		description = "Height of the ground icons in pixels.",
-		position = 1,
-		section = iconSection
-	)
-	@Units(Units.PIXELS)
-	default int iconSize()
-	{
-		return 16;
-	}
-
-	@ConfigItem(
-		keyName = "compactMode",
-		name = "Icons only until hovered",
-		description = "Draw only the icon on the ground. Hover a tile's icons or hold the hotkey to see names, prices and totals. Needs item icons on.",
-		position = 2,
-		section = iconSection
-	)
-	default boolean compactMode()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		keyName = "renameInMenu",
-		name = "Custom names in menu",
-		description = "Also use your custom item names in the right-click menu. Rename an item by holding the hotkey and right-clicking it.",
-		position = 3,
-		section = iconSection
-	)
-	default boolean renameInMenu()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		keyName = "quantityFormat",
-		name = "Stack size format",
-		description = "How the stack size is written after the name: 'Prayer potion(4) x 3' or 'Prayer potion(4) (3)'.",
-		position = 5,
-		section = iconSection
-	)
-	default QuantityFormat quantityFormat()
-	{
-		return QuantityFormat.TIMES;
-	}
+	String renameSection = "renameSection";
 
 	@ConfigItem(
 		keyName = "groupDoses",
 		name = "Group doses and charges",
 		description = "Renaming 'Prayer potion(4)' renames every dose. The item's real dose is appended to the custom name, so you get 'PPot(3)', 'PPot(2)' and so on.",
-		position = 3,
-		section = iconSection
+		position = 0,
+		section = renameSection
 	)
 	default boolean groupDoses()
 	{
@@ -788,8 +677,8 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "renames",
 		name = "Item renames",
 		description = "Your renames, one per line as Real name=Custom name. * works as a wildcard. Use the Rename menu option (hotkey + right-click an item) and its Renames > Export / Import entries rather than editing this by hand.",
-		position = 4,
-		section = iconSection
+		position = 1,
+		section = renameSection
 	)
 	default String renames()
 	{
@@ -802,4 +691,194 @@ public interface GroundItemsModifiableConfig extends Config
 		description = ""
 	)
 	void setRenames(String renames);
+
+	@ConfigSection(
+		name = "Right-click menu",
+		description = "How ground items appear in the right-click menu.",
+		position = 6,
+		closedByDefault = true
+	)
+	String menuSection = "menuSection";
+
+	@ConfigItem(
+		keyName = "menuHighlightMode",
+		name = "Menu highlight mode",
+		description = "Configures what to highlight in right-click menu.",
+		position = 0,
+		section = menuSection
+	)
+	default MenuHighlightMode menuHighlightMode()
+	{
+		return MenuHighlightMode.NAME;
+	}
+
+	@ConfigItem(
+		keyName = "showMenuItemQuantities",
+		name = "Show menu item quantities",
+		description = "Configures whether or not to show the item quantities in the menu.",
+		position = 1,
+		section = menuSection
+	)
+	default boolean showMenuItemQuantities()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "recolorMenuHiddenItems",
+		name = "Recolor menu hidden items",
+		description = "Configures whether or not hidden items in right-click menu will be recolored.",
+		position = 2,
+		section = menuSection
+	)
+	default boolean recolorMenuHiddenItems()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "deprioritizeHiddenItems",
+		name = "Deprioritize menu hidden items",
+		description = "Depriotizies the menu options for items which are hidden, requiring a right-click to pick up.",
+		position = 3,
+		section = menuSection
+	)
+	default boolean deprioritizeHiddenItems()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "collapseEntries",
+		name = "Collapse ground item menu",
+		description = "Collapses ground item menu entries together and appends count.",
+		position = 4,
+		section = menuSection
+	)
+	default boolean collapseEntries()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "renameInMenu",
+		name = "Custom names in menu",
+		description = "Also use your custom item names in the right-click menu. Rename an item by holding the hotkey and right-clicking it.",
+		position = 5,
+		section = menuSection
+	)
+	default boolean renameInMenu()
+	{
+		return true;
+	}
+
+	@ConfigSection(
+		name = "Lootbeams",
+		description = "Lootbeams for highlighted and valuable items.",
+		position = 7,
+		closedByDefault = true
+	)
+	String lootbeamSection = "lootbeamSection";
+
+	@ConfigItem(
+		keyName = "showLootbeamForHighlighted",
+		name = "Highlighted item lootbeams",
+		description = "Configures lootbeams to show for all highlighted items.",
+		position = 0,
+		section = lootbeamSection
+	)
+	default boolean showLootbeamForHighlighted()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "showLootbeamTier",
+		name = "Lootbeam tier",
+		description = "Configures which price tiers will trigger a lootbeam.",
+		position = 1,
+		section = lootbeamSection
+	)
+	default HighlightTier showLootbeamTier()
+	{
+		return HighlightTier.HIGH;
+	}
+
+	@ConfigItem(
+		keyName = "lootbeamStyle",
+		name = "Lootbeam style",
+		description = "Style of lootbeam to use.",
+		position = 2,
+		section = lootbeamSection
+	)
+	default Lootbeam.Style lootbeamStyle()
+	{
+		return Lootbeam.Style.MODERN;
+	}
+
+	@ConfigSection(
+		name = "Notifications",
+		description = "Desktop notifications for drops.",
+		position = 8,
+		closedByDefault = true
+	)
+	String notifySection = "notifySection";
+
+	@ConfigItem(
+		keyName = "notifyHighlightedDrops",
+		name = "Notify for highlighted drops",
+		description = "Configures whether or not to notify for drops on your highlighted list.",
+		position = 0,
+		section = notifySection
+	)
+	default boolean notifyHighlightedDrops()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "notifyTier",
+		name = "Notify tier",
+		description = "Configures which price tiers will trigger a notification on drop.",
+		position = 1,
+		section = notifySection
+	)
+	default HighlightTier notifyTier()
+	{
+		return HighlightTier.OFF;
+	}
+
+	@ConfigSection(
+		name = "Hotkey",
+		description = "The key that shows hidden items, the hide/highlight boxes and the rename menu.",
+		position = 9,
+		closedByDefault = true
+	)
+	String hotkeySection = "hotkeySection";
+
+	@ConfigItem(
+		keyName = "hotkey",
+		name = "Hotkey",
+		description = "Configures the hotkey used by the Ground Items plugin.",
+		position = 0,
+		section = hotkeySection
+	)
+	default Keybind hotkey()
+	{
+		return Keybind.ALT;
+	}
+
+	@ConfigItem(
+		keyName = "doubleTapDelay",
+		name = "Double-tap delay",
+		description = "Delay for the double-tap ALT to hide ground items. 0 to disable.",
+		position = 1,
+		section = hotkeySection
+	)
+	@Units(Units.MILLISECONDS)
+	default int doubleTapDelay()
+	{
+		return 250;
+	}
+
 }

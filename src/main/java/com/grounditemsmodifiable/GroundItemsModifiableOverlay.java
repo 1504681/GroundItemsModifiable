@@ -34,6 +34,7 @@ import com.grounditemsmodifiable.config.QuantityFormat;
 import com.grounditemsmodifiable.config.TileColorMode;
 import com.grounditemsmodifiable.config.TileFillMode;
 import com.grounditemsmodifiable.config.TileShape;
+import com.grounditemsmodifiable.config.TimerVisibility;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -418,47 +419,49 @@ public class GroundItemsModifiableOverlay extends Overlay
 				graphics.drawImage(icon, iconX, iconY, iconWidth, iconHeight, null);
 			}
 
-			// When the hotkey is pressed the hidden/highlight boxes are drawn to the right of the text,
-			// so always draw the pie since it is on the left hand side.
-			if (groundItemTimers == DespawnTimerMode.RING)
+			final TimerInfo timer = timerInfo(item);
+			if (timer != null && (plugin.isHotKeyPressed() || timerVisible(timer)))
 			{
-				if (icon != null)
+				if (groundItemTimers == DespawnTimerMode.RING)
 				{
-					final int iconX = textX - iconSpan;
-					final int iconY = textY - (fm.getAscent() + iconHeight) / 2;
-					drawTimerRing(graphics, iconX + iconWidth / 2, iconY + iconHeight / 2, Math.max(iconWidth, iconHeight) + 4, item);
+					if (icon != null)
+					{
+						final int iconX = textX - iconSpan;
+						final int iconY = textY - (fm.getAscent() + iconHeight) / 2;
+						drawTimerRing(graphics, iconX + iconWidth / 2, iconY + iconHeight / 2, Math.max(iconWidth, iconHeight) + 4, timer);
+					}
+					else
+					{
+						drawTimerRing(graphics, textX - TIMER_OVERLAY_DIAMETER / 2 - 2, textY - fm.getAscent() / 2, TIMER_OVERLAY_DIAMETER + 2, timer);
+					}
 				}
-				else
+				else if (groundItemTimers == DespawnTimerMode.BAR)
 				{
-					drawTimerRing(graphics, textX - TIMER_OVERLAY_DIAMETER / 2 - 2, textY - fm.getAscent() / 2, TIMER_OVERLAY_DIAMETER + 2, item);
+					drawTimerBar(graphics, textX - iconSpan, textY + 2, iconSpan + fm.stringWidth(itemString), timer);
 				}
-			}
-			else if (groundItemTimers == DespawnTimerMode.PIE || plugin.isHotKeyPressed())
-			{
-				drawTimerPieOverlay(graphics, textX - iconSpan, textY, item);
-			}
-			else if (groundItemTimers == DespawnTimerMode.SECONDS || groundItemTimers == DespawnTimerMode.TICKS)
-			{
-				Instant despawnTime = calculateDespawnTime(item);
-				Color timerColor = getItemTimerColor(item);
-				if (despawnTime != null && timerColor != null)
+				// When the hotkey is pressed the hidden/highlight boxes are drawn to the right of the text,
+				// so draw the pie since it is on the left hand side.
+				else if (groundItemTimers == DespawnTimerMode.PIE || plugin.isHotKeyPressed())
 				{
-					long despawnTimeMillis = despawnTime.toEpochMilli() - Instant.now().toEpochMilli();
+					drawTimerPieOverlay(graphics, textX - iconSpan, textY, timer);
+				}
+				else if (groundItemTimers == DespawnTimerMode.SECONDS || groundItemTimers == DespawnTimerMode.TICKS)
+				{
 					final String timerText;
 					if (groundItemTimers == DespawnTimerMode.SECONDS)
 					{
-						timerText = String.format(" - %.1f", despawnTimeMillis / 1000f);
+						timerText = String.format(" - %.1f", timer.remainingMillis / 1000f);
 					}
 					else // TICKS
 					{
-						timerText = String.format(" - %d", despawnTimeMillis / 600);
+						timerText = String.format(" - %d", timer.remainingMillis / 600);
 					}
 
 					// The timer text is drawn separately to have its own color, and is intentionally not included
 					// in the getCanvasTextLocation() call because the timer text can change per frame and we do not
 					// use a monospaced font, which causes the text location on screen to jump around slightly each frame.
 					textComponent.setText(timerText);
-					textComponent.setColor(timerColor);
+					textComponent.setColor(timer.color);
 					textComponent.setOutline(outline);
 					textComponent.setPosition(new java.awt.Point(textX + fm.stringWidth(itemString), textY));
 					textComponent.render(graphics);
@@ -778,29 +781,135 @@ public class GroundItemsModifiableOverlay extends Overlay
 		return null;
 	}
 
-	private void drawTimerPieOverlay(Graphics2D graphics, int textX, int textY, GroundItem groundItem)
+	/**
+	 * Everything the timer renderers need about one item, computed once per frame.
+	 */
+	private static final class TimerInfo
 	{
-		Instant now = Instant.now();
-		Instant spawnTime = groundItem.getSpawnTime();
-		Instant despawnTime = calculateDespawnTime(groundItem);
-		Color fillColor = getItemTimerColor(groundItem);
+		long remainingMillis;
+		float remainingFraction;
+		Color color;
+		boolean pulsing;
+		boolean isPublic;
+	}
 
-		if (spawnTime == null || despawnTime == null || fillColor == null)
+	private TimerInfo timerInfo(GroundItem groundItem)
+	{
+		final Instant now = Instant.now();
+		final Instant spawnTime = groundItem.getSpawnTime();
+		final Instant despawnTime = calculateDespawnTime(groundItem);
+		final Color timerColor = getItemTimerColor(groundItem);
+
+		if (spawnTime == null || despawnTime == null || timerColor == null)
 		{
-			return;
+			return null;
 		}
 
-		float percent = (float) (now.toEpochMilli() - spawnTime.toEpochMilli()) / (despawnTime.toEpochMilli() - spawnTime.toEpochMilli());
+		final TimerInfo info = new TimerInfo();
+		info.remainingMillis = despawnTime.toEpochMilli() - now.toEpochMilli();
+		info.remainingFraction = (float) info.remainingMillis / (despawnTime.toEpochMilli() - spawnTime.toEpochMilli());
+		info.color = timerColor;
+		info.isPublic = timerColor == PUBLIC_TIMER_COLOR;
+		final int pulseSeconds = config.ringPulseSeconds();
+		info.pulsing = pulseSeconds > 0 && info.remainingMillis <= pulseSeconds * 1000L;
+		return info;
+	}
 
+	private boolean timerVisible(TimerInfo timer)
+	{
+		switch (config.timerVisibility())
+		{
+			case PUBLIC_OR_PULSING:
+				return timer.isPublic || timer.pulsing;
+			case UNDER_TICKS:
+				return timer.remainingMillis / 600 < config.timerShowTicks();
+			default:
+				return true;
+		}
+	}
+
+	/**
+	 * 0..1 throb shared by the ring and bar, faster in the last five seconds.
+	 */
+	private static double pulsePhase(TimerInfo timer)
+	{
+		final double period = timer.remainingMillis < 5000 ? 350.0 : 700.0;
+		return (Math.sin(Instant.now().toEpochMilli() / period * Math.PI) + 1) / 2;
+	}
+
+	private Color pulsedColor(TimerInfo timer, double pulse)
+	{
+		final Color base = config.ringPulseColor();
+		return ColorUtil.colorWithAlpha(base, (int) (base.getAlpha() * (0.35 + 0.65 * pulse)));
+	}
+
+	private void drawTimerPieOverlay(Graphics2D graphics, int textX, int textY, TimerInfo timer)
+	{
 		progressPieComponent.setDiameter(TIMER_OVERLAY_DIAMETER);
 		// Shift over to not be on top of the text
 		int x = textX - TIMER_OVERLAY_DIAMETER;
 		int y = textY - TIMER_OVERLAY_DIAMETER / 2;
 		progressPieComponent.setPosition(new Point(x, y));
-		progressPieComponent.setFill(fillColor);
-		progressPieComponent.setBorderColor(fillColor);
-		progressPieComponent.setProgress(1 - percent); // inverse so pie drains over time
+		progressPieComponent.setFill(timer.color);
+		progressPieComponent.setBorderColor(timer.color);
+		progressPieComponent.setProgress(timer.remainingFraction); // drains over time
 		progressPieComponent.render(graphics);
+	}
+
+	/**
+	 * A ring that drains clockwise as the item approaches despawn, pulsing once under the configured threshold.
+	 */
+	private void drawTimerRing(Graphics2D graphics, int centreX, int centreY, int diameter, TimerInfo timer)
+	{
+		Color ringColor = timer.color;
+		float width = config.ringWidth();
+
+		if (timer.pulsing)
+		{
+			final double pulse = pulsePhase(timer);
+			ringColor = pulsedColor(timer, pulse);
+			width += (float) pulse * 2;
+		}
+
+		final Stroke originalStroke = graphics.getStroke();
+		final Object originalAa = graphics.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+		graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		graphics.setStroke(new BasicStroke(width, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
+
+		final double x = centreX - diameter / 2.0;
+		final double y = centreY - diameter / 2.0;
+
+		// faint full track so the drained part stays readable
+		graphics.setColor(ColorUtil.colorWithAlpha(Color.BLACK, 90));
+		graphics.draw(new Ellipse2D.Double(x, y, diameter, diameter));
+
+		graphics.setColor(ringColor);
+		graphics.draw(new Arc2D.Double(x, y, diameter, diameter, 90, -360 * timer.remainingFraction, Arc2D.OPEN));
+
+		graphics.setStroke(originalStroke);
+		if (originalAa != null)
+		{
+			graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, originalAa);
+		}
+	}
+
+	/**
+	 * A thin bar under the icon and name that shrinks from the right as the item approaches despawn.
+	 */
+	private void drawTimerBar(Graphics2D graphics, int x, int y, int width, TimerInfo timer)
+	{
+		final int height = config.ringWidth();
+		Color barColor = timer.color;
+		if (timer.pulsing)
+		{
+			barColor = pulsedColor(timer, pulsePhase(timer));
+		}
+
+		graphics.setColor(ColorUtil.colorWithAlpha(Color.BLACK, 120));
+		graphics.fillRect(x - 1, y - 1, width + 2, height + 2);
+
+		graphics.setColor(barColor);
+		graphics.fillRect(x, y, Math.max(1, Math.round(width * timer.remainingFraction)), height);
 	}
 
 	private void drawRectangle(Graphics2D graphics, Rectangle rect, Color color, boolean inList, boolean hiddenBox)

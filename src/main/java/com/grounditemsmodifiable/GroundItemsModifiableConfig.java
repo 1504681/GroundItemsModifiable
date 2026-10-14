@@ -43,6 +43,7 @@ import com.grounditemsmodifiable.config.QuantityFormat;
 import com.grounditemsmodifiable.config.TileColorMode;
 import com.grounditemsmodifiable.config.TileFillMode;
 import com.grounditemsmodifiable.config.TileShape;
+import com.grounditemsmodifiable.config.TimerVisibility;
 import com.grounditemsmodifiable.config.ValueCalculationMode;
 import com.grounditemsmodifiable.config.OwnershipFilterMode;
 
@@ -592,8 +593,8 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigSection(
-		name = "Timer ring and tile totals",
-		description = "The ring despawn timer and the per-tile value total.",
+		name = "Despawn timer and tile totals",
+		description = "Ring and bar despawn timers, when timers are shown, and the per-tile value total.",
 		position = 42
 	)
 	String ringSection = "ringSection";
@@ -601,8 +602,8 @@ public interface GroundItemsModifiableConfig extends Config
 	@Range(min = 0, max = 120)
 	@ConfigItem(
 		keyName = "ringPulseSeconds",
-		name = "Ring pulse under",
-		description = "When the despawn timer is set to ring, pulse the ring once this many seconds are left. 0 disables the pulse.",
+		name = "Pulse under",
+		description = "Ring and bar timers pulse once this many seconds are left. 0 disables the pulse.",
 		position = 0,
 		section = ringSection
 	)
@@ -615,8 +616,8 @@ public interface GroundItemsModifiableConfig extends Config
 	@Alpha
 	@ConfigItem(
 		keyName = "ringPulseColor",
-		name = "Ring pulse colour",
-		description = "Colour of the ring while it is pulsing.",
+		name = "Pulse colour",
+		description = "Colour of the ring or bar while it is pulsing.",
 		position = 1,
 		section = ringSection
 	)
@@ -628,8 +629,8 @@ public interface GroundItemsModifiableConfig extends Config
 	@Range(min = 1, max = 6)
 	@ConfigItem(
 		keyName = "ringWidth",
-		name = "Ring width",
-		description = "Thickness of the timer ring in pixels.",
+		name = "Ring / bar thickness",
+		description = "Thickness of the ring or bar timer in pixels.",
 		position = 2,
 		section = ringSection
 	)
@@ -640,10 +641,36 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "timerVisibility",
+		name = "Show timer",
+		description = "Always, only once the item is public (yellow) or pulsing, or only under a number of ticks left. Holding the hotkey always shows every timer.",
+		position = 10,
+		section = ringSection
+	)
+	default TimerVisibility timerVisibility()
+	{
+		return TimerVisibility.ALWAYS;
+	}
+
+	@Range(min = 1, max = 2000)
+	@ConfigItem(
+		keyName = "timerShowTicks",
+		name = "Show timer under",
+		description = "Ticks left at which the timer appears when 'Show timer' is set to under N ticks.",
+		position = 11,
+		section = ringSection
+	)
+	@Units(Units.TICKS)
+	default int timerShowTicks()
+	{
+		return 100;
+	}
+
+	@ConfigItem(
 		keyName = "showTileTotal",
 		name = "Tile value total",
 		description = "When two or more items share a tile, draw a total value line above them, coloured by value tier.",
-		position = 3,
+		position = 20,
 		section = ringSection
 	)
 	default boolean showTileTotal()
@@ -655,7 +682,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileTotalMinimum",
 		name = "Total minimum value",
 		description = "Only show the tile total when it is at least this much.",
-		position = 4,
+		position = 21,
 		section = ringSection
 	)
 	default int tileTotalMinimum()

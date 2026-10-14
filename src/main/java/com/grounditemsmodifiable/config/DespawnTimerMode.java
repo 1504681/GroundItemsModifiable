@@ -29,6 +29,7 @@ public enum DespawnTimerMode
 	OFF,
 	PIE,
 	RING,
+	BAR,
 	TICKS,
 	SECONDS
 }

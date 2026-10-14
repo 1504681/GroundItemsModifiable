@@ -4,7 +4,7 @@ A fork of RuneLite's built-in Ground Items plugin with three additions:
 
 - **Tile fill and outline you control.** Mark the whole tile or just a circle in its centre. Tiles can use the item's colour or one custom colour for the outline and the fill, with separate opacity and outline width. One polygon per tile; the highlighted item on a tile decides its colour.
 - **Rename ground items.** Hold the hotkey (ALT by default), right-click an item and pick **Rename**. The custom name is used on the ground, in the right-click menu and when matching your highlight/hidden lists. **Reset name** or an empty rename restores the real name. Hotkey + right-click also offers **Renames > Export to clipboard** and **Import from clipboard** (or `::exportrenames` / `::importrenames` in chat); import merges into what you have. `*` works as a wildcard (`Grimy *=Herb`). With **Group doses and charges** on, renaming `Prayer potion(4)` to `PPot` covers every dose, and each item keeps its real dose: `PPot(3)`, `PPot(2)`, on the ground and in the menu.
-- **Item icons on the ground.** Every ground item label gets its icon drawn next to it, on by default.
+- **Item icons on the ground.** Every ground item label gets its icon drawn next to it, on by default. **Icons only until hovered** strips the ground down to icons; hover a tile's icons or hold the hotkey and its names, prices and total appear.
 - **Ring and bar despawn timers.** Set *Despawn timer* to **Ring** (drains clockwise around the icon) or **Bar** (a thin bar under the icon and name that shrinks from the right). Under a configurable number of seconds both pulse in a colour of your choice, faster in the last five seconds. **Show timer** can hide any timer until the item is public or pulsing, or until fewer than N ticks remain; holding the hotkey always shows every timer.
 - **Tile value total.** When two or more items share a tile, one extra line above the stack shows their summed value, coloured by your value tiers.
 
@@ -34,6 +34,7 @@ Despawn timer and tile totals
 | Pulse under | 15 s | Ring and bar pulse with this much time left, 0 disables |
 | Pulse colour | red | Colour while pulsing |
 | Ring / bar thickness | 2 px | Thickness of the ring or bar |
+| Bar width | Icon and name | Bar spans icon and name, or just the icon |
 | Show timer | Always | Always, public or pulsing only, or under N ticks left |
 | Show timer under | 100 ticks | Threshold for the under-N-ticks mode |
 | Tile value total | on | Total line above tiles with 2+ items |
@@ -45,6 +46,7 @@ Icons and names
 |---|---|---|
 | Show item icons | on | Icon next to the name on the ground |
 | Icon size | 16 px | Icon height |
+| Icons only until hovered | off | Only icons on the ground; hover or hold the hotkey for text |
 | Custom names in menu | on | Use renamed items in the right-click menu too |
 | Stack size format | x 3 | `Prayer potion(4) x 3` or `Prayer potion(4) (3)` |
 | Group doses and charges | on | `(4)`, `(3)`... suffixes share one rename |
@@ -52,6 +54,7 @@ Icons and names
 
 ## Changelog
 
+- 1.3.0: icons-only mode with hover to expand, bar width setting (icon only)
 - 1.2.0: bar despawn timer, "Show timer" visibility rule (always / public or pulsing / under N ticks)
 - 1.1.2: grouped renames keep the item's real dose ("Ovl (2)" stays a 2-dose) on the ground and in the right-click menu
 - 1.1.1: stack size shown as "x 3" instead of "(3)", with a format setting

@@ -25,6 +25,7 @@
  */
 package com.grounditemsmodifiable;
 
+import com.grounditemsmodifiable.config.BarWidth;
 import com.grounditemsmodifiable.config.DespawnTimerMode;
 import static com.grounditemsmodifiable.config.ItemHighlightMode.MENU;
 import static com.grounditemsmodifiable.config.ItemHighlightMode.NONE;
@@ -53,9 +54,11 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import net.runelite.api.Client;
 import net.runelite.api.Perspective;
@@ -106,6 +109,9 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private final List<GroundItem> visibleItems = new ArrayList<>();
 	private final Map<WorldPoint, GroundItem> tileItems = new LinkedHashMap<>();
 	private final Map<WorldPoint, long[]> tileTotals = new LinkedHashMap<>();
+	// compact mode: screen area each tile's icons/text covered last frame, and the tiles the mouse is over now
+	private final Map<WorldPoint, Rectangle> tileHoverBounds = new HashMap<>();
+	private final Set<WorldPoint> hoveredTiles = new HashSet<>();
 
 	@Inject
 	private GroundItemsModifiableOverlay(Client client, GroundItemsModifiablePlugin plugin, GroundItemsModifiableConfig config, ItemManager itemManager)
@@ -263,6 +269,22 @@ public class GroundItemsModifiableOverlay extends Overlay
 			graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 		}
 
+		// Compact mode: a tile is expanded while the mouse is over what it drew last frame
+		final boolean compact = config.compactMode() && showIcons;
+		final BarWidth barWidth = config.barWidth();
+		hoveredTiles.clear();
+		if (compact)
+		{
+			for (Map.Entry<WorldPoint, Rectangle> entry : tileHoverBounds.entrySet())
+			{
+				if (entry.getValue().contains(mousePos.getX(), mousePos.getY()))
+				{
+					hoveredTiles.add(entry.getKey());
+				}
+			}
+		}
+		tileHoverBounds.clear();
+
 		// Pass 3: icons, names, timers and the hotkey boxes
 		for (GroundItem item : visibleItems)
 		{
@@ -352,9 +374,18 @@ public class GroundItemsModifiableOverlay extends Overlay
 				iconSpan = iconWidth + ICON_GAP;
 			}
 
+			final WorldPoint worldPoint = item.getItemLayer().getWorldLocation();
+			final boolean collapsed = compact && icon != null && !plugin.isHotKeyPressed() && !hoveredTiles.contains(worldPoint);
+			final int textWidth = fm.stringWidth(itemString);
+			// collapsed icons stack with their own gap so they do not overlap
+			final int lineGap = collapsed ? Math.max(STRING_GAP, iconHeight + 2) : STRING_GAP;
+
 			// getCanvasTextLocation centres the text on the tile; shift it so icon + text is centred instead
 			final int textX = textPoint.getX() + iconSpan / 2;
-			final int textY = textPoint.getY() - (STRING_GAP * offset);
+			final int textY = textPoint.getY() - (lineGap * offset);
+			// collapsed: icon alone, centred on the tile; otherwise icon sits left of the text
+			final int iconX = collapsed ? textPoint.getX() + textWidth / 2 - iconWidth / 2 : textX - iconSpan;
+			final int iconY = textY - (fm.getAscent() + iconHeight) / 2;
 
 			if (plugin.isHotKeyPressed())
 			{
@@ -414,8 +445,6 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 			if (icon != null)
 			{
-				final int iconX = textX - iconSpan;
-				final int iconY = textY - (fm.getAscent() + iconHeight) / 2;
 				graphics.drawImage(icon, iconX, iconY, iconWidth, iconHeight, null);
 			}
 
@@ -426,8 +455,6 @@ public class GroundItemsModifiableOverlay extends Overlay
 				{
 					if (icon != null)
 					{
-						final int iconX = textX - iconSpan;
-						final int iconY = textY - (fm.getAscent() + iconHeight) / 2;
 						drawTimerRing(graphics, iconX + iconWidth / 2, iconY + iconHeight / 2, Math.max(iconWidth, iconHeight) + 4, timer);
 					}
 					else
@@ -437,15 +464,22 @@ public class GroundItemsModifiableOverlay extends Overlay
 				}
 				else if (groundItemTimers == DespawnTimerMode.BAR)
 				{
-					drawTimerBar(graphics, textX - iconSpan, textY + 2, iconSpan + fm.stringWidth(itemString), timer);
+					if (icon != null && (collapsed || barWidth == BarWidth.ICON))
+					{
+						drawTimerBar(graphics, iconX, textY + 2, iconWidth, timer);
+					}
+					else
+					{
+						drawTimerBar(graphics, textX - iconSpan, textY + 2, iconSpan + textWidth, timer);
+					}
 				}
 				// When the hotkey is pressed the hidden/highlight boxes are drawn to the right of the text,
 				// so draw the pie since it is on the left hand side.
 				else if (groundItemTimers == DespawnTimerMode.PIE || plugin.isHotKeyPressed())
 				{
-					drawTimerPieOverlay(graphics, textX - iconSpan, textY, timer);
+					drawTimerPieOverlay(graphics, collapsed ? iconX : textX - iconSpan, textY, timer);
 				}
-				else if (groundItemTimers == DespawnTimerMode.SECONDS || groundItemTimers == DespawnTimerMode.TICKS)
+				else if (!collapsed && (groundItemTimers == DespawnTimerMode.SECONDS || groundItemTimers == DespawnTimerMode.TICKS))
 				{
 					final String timerText;
 					if (groundItemTimers == DespawnTimerMode.SECONDS)
@@ -468,6 +502,19 @@ public class GroundItemsModifiableOverlay extends Overlay
 				}
 			}
 
+			if (compact)
+			{
+				final Rectangle bounds = collapsed
+					? new Rectangle(iconX - 2, iconY - 2, iconWidth + 4, iconHeight + 4)
+					: new Rectangle(textX - iconSpan - 2, textY - fm.getAscent() - 2, iconSpan + textWidth + 4, fm.getHeight() + 4);
+				tileHoverBounds.merge(worldPoint, bounds, Rectangle::union);
+			}
+
+			if (collapsed)
+			{
+				continue;
+			}
+
 			textComponent.setText(itemString);
 			textComponent.setColor(color);
 			textComponent.setOutline(outline);
@@ -477,7 +524,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 		if (showTileTotal)
 		{
-			renderTileTotals(graphics, outline);
+			renderTileTotals(graphics, outline, compact && !plugin.isHotKeyPressed());
 		}
 
 		return null;
@@ -486,12 +533,17 @@ public class GroundItemsModifiableOverlay extends Overlay
 	/**
 	 * One extra line above the stack of a tile holding two or more items: the summed value, coloured by tier.
 	 */
-	private void renderTileTotals(Graphics2D graphics, boolean outline)
+	private void renderTileTotals(Graphics2D graphics, boolean outline, boolean hoveredOnly)
 	{
 		final long minimum = config.tileTotalMinimum();
 
 		for (Map.Entry<WorldPoint, long[]> entry : tileTotals.entrySet())
 		{
+			if (hoveredOnly && !hoveredTiles.contains(entry.getKey()))
+			{
+				continue;
+			}
+
 			final long count = entry.getValue()[0];
 			final long value = entry.getValue()[1];
 			if (count < 2 || value <= 0 || value < minimum)

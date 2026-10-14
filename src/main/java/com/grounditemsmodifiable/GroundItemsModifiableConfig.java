@@ -34,6 +34,7 @@ import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Keybind;
 import net.runelite.client.config.Range;
 import net.runelite.client.config.Units;
+import com.grounditemsmodifiable.config.BarWidth;
 import com.grounditemsmodifiable.config.DespawnTimerMode;
 import com.grounditemsmodifiable.config.HighlightTier;
 import com.grounditemsmodifiable.config.ItemHighlightMode;
@@ -641,6 +642,18 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "barWidth",
+		name = "Bar width",
+		description = "Bar timer spans the icon and the name, or just the icon.",
+		position = 3,
+		section = ringSection
+	)
+	default BarWidth barWidth()
+	{
+		return BarWidth.FULL;
+	}
+
+	@ConfigItem(
 		keyName = "timerVisibility",
 		name = "Show timer",
 		description = "Always, only once the item is public (yellow) or pulsing, or only under a number of ticks left. Holding the hotkey always shows every timer.",
@@ -724,10 +737,22 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "compactMode",
+		name = "Icons only until hovered",
+		description = "Draw only the icon on the ground. Hover a tile's icons or hold the hotkey to see names, prices and totals. Needs item icons on.",
+		position = 2,
+		section = iconSection
+	)
+	default boolean compactMode()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 		keyName = "renameInMenu",
 		name = "Custom names in menu",
 		description = "Also use your custom item names in the right-click menu. Rename an item by holding the hotkey and right-clicking it.",
-		position = 2,
+		position = 3,
 		section = iconSection
 	)
 	default boolean renameInMenu()

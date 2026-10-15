@@ -4,7 +4,7 @@ A fork of RuneLite's built-in Ground Items plugin with three additions:
 
 - **Tile fill and outline you control.** Mark the whole tile or just a circle in its centre. Tiles can use the item's colour or one custom colour for the outline and the fill, with separate opacity and outline width. One polygon per tile; the highlighted item on a tile decides its colour.
 - **Rename ground items.** Hold the hotkey (ALT by default), right-click an item and pick **Rename**. The custom name is used on the ground, in the right-click menu and when matching your highlight/hidden lists. **Reset name** or an empty rename restores the real name. Hotkey + right-click also offers **Renames > Export to clipboard** and **Import from clipboard** (or `::exportrenames` / `::importrenames` in chat); import merges into what you have. `*` works as a wildcard (`Grimy *=Herb`). With **Group doses and charges** on, renaming `Prayer potion(4)` to `PPot` covers every dose, and each item keeps its real dose: `PPot(3)`, `PPot(2)`, on the ground and in the menu.
-- **Item icons on the ground.** Every ground item label gets its icon drawn next to it, on by default. **Icons only until hovered** strips the ground down to icons; hover a tile's icons or hold the hotkey and its names, prices and total appear.
+- **Item icons on the ground.** Every ground item label gets its icon drawn next to it, on by default. **Icons only until hovered** strips the ground down to icons; put the mouse on an item (when the game offers Take on it) or hold the hotkey and that tile's names, prices and total appear.
 - **Ring and bar despawn timers.** Set *Despawn timer* to **Ring** (drains clockwise around the icon) or **Bar** (a thin bar under the icon and name that shrinks from the right). Under a configurable number of seconds both pulse in a colour of your choice, faster in the last five seconds. **Show timer** can hide any timer until the item is public or pulsing, or until fewer than N ticks remain; holding the hotkey always shows every timer.
 - **Tile value total.** When two or more items share a tile, one extra line above the stack shows their summed value, coloured by your value tiers.
 
@@ -21,7 +21,7 @@ Ground overlay
 | Stack size format | x 3 | `Prayer potion(4) x 3` or `Prayer potion(4) (3)` |
 | Show item icons | on | Icon next to the name on the ground |
 | Icon size | 16 px | Icon height |
-| Icons only until hovered | off | Only icons on the ground; hover the icons or their tile, or hold the hotkey, for text |
+| Icons only until hovered | off | Only icons on the ground; a tile expands while the game offers Take on it, or while the hotkey is held |
 | Stack size next to icon | on | Icons-only mode shows `x 3` after the icon in the item colour |
 | Tile value total | on | Total line above tiles with 2+ items |
 | Total minimum value | 0 | Hide totals below this value |
@@ -64,6 +64,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.6.0: icons-only tiles expand when the game offers Take on one of their items, replacing the pixel hover area
 - 1.5.1: icons-only tiles stay open a moment after the mouse leaves and use a wider area to stay open, so edges cannot flicker
 - 1.5.0: bar timer marks where a drop goes public
 - 1.4.2: icons-only hover area covers both the collapsed and expanded layout, so it no longer flickers at its edge

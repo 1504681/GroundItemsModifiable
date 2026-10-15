@@ -242,7 +242,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "compactMode",
 		name = "Icons only until hovered",
-		description = "Draw only the icon on the ground. Hover a tile's icons or hold the hotkey to see names, prices and totals. Needs item icons on.",
+		description = "Draw only the icon on the ground. A tile shows names, prices and totals while the mouse is over one of its items (the game offers Take), or while the hotkey is held. Needs item icons on.",
 		position = 6,
 		section = overlaySection
 	)

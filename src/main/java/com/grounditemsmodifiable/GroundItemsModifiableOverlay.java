@@ -61,6 +61,8 @@ import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import net.runelite.api.Client;
+import net.runelite.api.MenuEntry;
+import net.runelite.api.MenuAction;
 import net.runelite.api.Perspective;
 import net.runelite.api.Player;
 import net.runelite.api.Point;
@@ -91,11 +93,6 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private static final int RECTANGLE_SIZE = 8;
 	// Gap between the item icon and the item name
 	private static final int ICON_GAP = 3;
-	// extra pixels past one icon height added to every side of the icons-only hover area
-	private static final int HOVER_PAD = 8;
-	// an expanded tile stays open while the mouse is this much further out, and this long after it leaves
-	private static final int HOVER_EXIT_MARGIN = 12;
-	private static final long HOVER_LINGER_MS = 300;
 	// Points used to approximate the ground circle
 	private static final int CIRCLE_SEGMENTS = 24;
 	private static final Color PUBLIC_TIMER_COLOR = Color.YELLOW;
@@ -114,11 +111,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private final List<GroundItem> visibleItems = new ArrayList<>();
 	private final Map<WorldPoint, GroundItem> tileItems = new LinkedHashMap<>();
 	private final Map<WorldPoint, long[]> tileTotals = new LinkedHashMap<>();
-	// compact mode: screen area each tile's icons/text covered last frame, and the tiles the mouse is over now
-	private final Map<WorldPoint, Rectangle> tileHoverBounds = new HashMap<>();
+	// compact mode: tiles whose items the game currently offers under the cursor
 	private final Set<WorldPoint> hoveredTiles = new HashSet<>();
-	// compact mode: tiles kept expanded, and until when (epoch ms)
-	private final Map<WorldPoint, Long> expandedUntil = new HashMap<>();
 
 	@Inject
 	private GroundItemsModifiableOverlay(Client client, GroundItemsModifiablePlugin plugin, GroundItemsModifiableConfig config, ItemManager itemManager)
@@ -283,29 +277,24 @@ public class GroundItemsModifiableOverlay extends Overlay
 		hoveredTiles.clear();
 		if (compact)
 		{
-			// Hysteresis so a tile cannot flicker at the edge of its hover area: an expanded tile uses a larger
-			// area to stay open than a collapsed one needs to open, and stays open a moment after the mouse leaves.
-			final long nowMs = System.currentTimeMillis();
-			for (Map.Entry<WorldPoint, Rectangle> entry : tileHoverBounds.entrySet())
+			// A tile expands exactly when the game offers one of its items under the cursor ("Take", "Examine"...).
+			// The game's own hit test is stable, unlike a box around icons whose layout changes when expanding.
+			for (MenuEntry entry : client.getMenuEntries())
 			{
-				final Rectangle area = new Rectangle(entry.getValue());
-				if (expandedUntil.containsKey(entry.getKey()))
+				final MenuAction type = entry.getType();
+				if (type != MenuAction.GROUND_ITEM_FIRST_OPTION && type != MenuAction.GROUND_ITEM_SECOND_OPTION
+					&& type != MenuAction.GROUND_ITEM_THIRD_OPTION && type != MenuAction.GROUND_ITEM_FOURTH_OPTION
+					&& type != MenuAction.GROUND_ITEM_FIFTH_OPTION && type != MenuAction.EXAMINE_ITEM_GROUND)
 				{
-					area.grow(HOVER_EXIT_MARGIN, HOVER_EXIT_MARGIN);
+					continue;
 				}
-				if (area.contains(mousePos.getX(), mousePos.getY()))
+				final WorldView wv = client.getWorldView(entry.getWorldViewId());
+				if (wv != null)
 				{
-					expandedUntil.put(entry.getKey(), nowMs + HOVER_LINGER_MS);
+					hoveredTiles.add(WorldPoint.fromScene(wv, entry.getParam0(), entry.getParam1(), wv.getPlane()));
 				}
 			}
-			expandedUntil.values().removeIf(until -> until < nowMs);
-			hoveredTiles.addAll(expandedUntil.keySet());
 		}
-		else
-		{
-			expandedUntil.clear();
-		}
-		tileHoverBounds.clear();
 
 		// Pass 3: icons, names, timers and the hotkey boxes
 		for (GroundItem item : visibleItems)
@@ -521,29 +510,6 @@ public class GroundItemsModifiableOverlay extends Overlay
 				}
 			}
 
-			if (compact)
-			{
-				// The hitbox must not change shape when the tile expands, or the mouse near its edge sits inside
-				// one layout and outside the other and the tile flickers. So cover both layouts every frame:
-				// where the icon (and stack label) sits when collapsed, and where icon + text sit when expanded.
-				final int collapsedGap = Math.max(STRING_GAP, iconHeight + 2);
-				final int collapsedTextY = textPoint.getY() - (collapsedGap * offset);
-				final int collapsedIconX = textPoint.getX() + textWidth / 2 - (iconWidth + stackLabelSpan) / 2;
-				final int collapsedIconY = collapsedTextY - (fm.getAscent() + iconHeight) / 2;
-				final Rectangle bounds = new Rectangle(collapsedIconX - 2, Math.min(collapsedIconY, collapsedTextY - fm.getAscent()) - 2,
-					iconWidth + stackLabelSpan + 4, Math.max(iconHeight, fm.getHeight()) + 4);
-				final int expandedTextY = textPoint.getY() - (STRING_GAP * offset);
-				bounds.add(new Rectangle(textX - iconSpan - 2, expandedTextY - fm.getAscent() - 2, iconSpan + textWidth + 4, fm.getHeight() + 4));
-				// and make it generous: about an icon of padding all round, plus the ground tile itself
-				final int pad = iconHeight + HOVER_PAD;
-				bounds.grow(pad, pad);
-				final Polygon tilePoly = Perspective.getCanvasTilePoly(client, groundPoint, item.getItemLayer().getHeight());
-				if (tilePoly != null)
-				{
-					bounds.add(tilePoly.getBounds());
-				}
-				tileHoverBounds.merge(worldPoint, bounds, Rectangle::union);
-			}
 
 			if (collapsed)
 			{

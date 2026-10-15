@@ -91,6 +91,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private static final int RECTANGLE_SIZE = 8;
 	// Gap between the item icon and the item name
 	private static final int ICON_GAP = 3;
+	// extra pixels past one icon height added to every side of the icons-only hover area
+	private static final int HOVER_PAD = 8;
 	// Points used to approximate the ground circle
 	private static final int CIRCLE_SEGMENTS = 24;
 	private static final Color PUBLIC_TIMER_COLOR = Color.YELLOW;
@@ -504,6 +506,16 @@ public class GroundItemsModifiableOverlay extends Overlay
 				final Rectangle bounds = collapsed
 					? new Rectangle(iconX - 2, Math.min(iconY, textY - fm.getAscent()) - 2, iconWidth + collapsedLabelSpan + 4, Math.max(iconHeight, fm.getHeight()) + 4)
 					: new Rectangle(textX - iconSpan - 2, textY - fm.getAscent() - 2, iconSpan + textWidth + 4, fm.getHeight() + 4);
+				// A generous hitbox: expanding re-lays the tile's lines out, so a tight box around the icon lets the
+				// mouse fall outside it and the tile flickers between collapsed and expanded. Pad the drawn area by
+				// about an icon in every direction and include the ground tile itself.
+				final int pad = iconHeight + HOVER_PAD;
+				bounds.grow(pad, pad);
+				final Polygon tilePoly = Perspective.getCanvasTilePoly(client, groundPoint, item.getItemLayer().getHeight());
+				if (tilePoly != null)
+				{
+					bounds.add(tilePoly.getBounds());
+				}
 				tileHoverBounds.merge(worldPoint, bounds, Rectangle::union);
 			}
 

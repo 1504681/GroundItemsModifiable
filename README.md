@@ -21,7 +21,7 @@ Ground overlay
 | Stack size format | x 3 | `Prayer potion(4) x 3` or `Prayer potion(4) (3)` |
 | Show item icons | on | Icon next to the name on the ground |
 | Icon size | 16 px | Icon height |
-| Icons only until hovered | off | Only icons on the ground; hover or hold the hotkey for text |
+| Icons only until hovered | off | Only icons on the ground; hover the icons or their tile, or hold the hotkey, for text |
 | Stack size next to icon | on | Icons-only mode shows `x 3` after the icon in the item colour |
 | Tile value total | on | Total line above tiles with 2+ items |
 | Total minimum value | 0 | Hide totals below this value |
@@ -63,6 +63,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.4.1: icons-only hover area is about four times larger and includes the ground tile, no more flicker when a tile expands
 - 1.4.0: turns the built-in Ground Items plugin off when this one is on (and the other way round); `::importgrounditems` re-copies its settings
 - 1.3.2: icons-only mode shows the stack size next to the icon
 - 1.3.1: settings regrouped into themed sections (overlay, colours, tiles, timer, renames, menu, lootbeams, notifications, hotkey)

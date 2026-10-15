@@ -24,6 +24,8 @@ Ground overlay
 | Icons only until hovered | off | Only icons on the ground; a tile expands while the game offers Take on it, or while the hotkey is held |
 | Stack size next to icon | on | Icons-only mode shows `x 3` after the icon in the item colour |
 | Icon box from tier | Medium | Tier-coloured box around icons of items worth at least this tier; with the ring timer its border is the timer |
+| Box wraps name | on | When names show, the tier box wraps icon and name in one rectangle |
+| Shimmer from tier | High | Tier boxes of items worth at least this tier pulse and get a light sweep |
 | Tile value total | on | Total line above tiles with 2+ items |
 | Total minimum value | 0 | Hide totals below this value |
 
@@ -67,6 +69,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.8.0: tier box wraps the name when names show; shimmer on tier boxes from a chosen tier
 - 1.7.0: tile highlights drawn under NPCs and players; tier box around valuable item icons, doubling as the ring timer; tiles for highlighted or tier items; stack size can be hidden
 - 1.6.1: fix icons-only tiles not expanding on hover in the main world; version shown as the last settings section
 - 1.6.0: icons-only tiles expand when the game offers Take on one of their items, replacing the pixel hover area

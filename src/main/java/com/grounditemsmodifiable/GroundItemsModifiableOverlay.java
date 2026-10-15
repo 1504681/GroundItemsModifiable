@@ -42,6 +42,7 @@ import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
+import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.geom.PathIterator;
 import java.awt.geom.Path2D;
@@ -103,6 +104,10 @@ public class GroundItemsModifiableOverlay extends Overlay
 	// icon box: padding around the icon and corner rounding
 	private static final int BOX_PAD = 3;
 	private static final int BOX_ARC = 6;
+	// one light sweep across a shimmering box every this many ms
+	private static final long SHIMMER_PERIOD_MS = 2400;
+	// vertical spacing between expanded lines this frame
+	private int expandedGap = STRING_GAP;
 	// Points used to approximate the ground circle
 	private static final int CIRCLE_SEGMENTS = 24;
 	private static final Color PUBLIC_TIMER_COLOR = Color.YELLOW;
@@ -309,6 +314,11 @@ public class GroundItemsModifiableOverlay extends Overlay
 		final boolean compact = config.compactMode() && showIcons;
 		final boolean compactQuantity = config.compactQuantity();
 		final HighlightTier iconBoxTier = config.iconBoxTier();
+		final boolean boxWrapsName = config.iconBoxWrapsName();
+		final HighlightTier shimmerTier = config.shimmerTier();
+		// tier boxes are taller than a text line; spread expanded lines so neighbouring boxes do not overlap
+		expandedGap = showIcons && iconBoxTier != HighlightTier.OFF
+			? Math.max(STRING_GAP, Math.max(iconHeight, fm.getHeight()) + 2 * BOX_PAD + 2) : STRING_GAP;
 		final BarWidth barWidth = config.barWidth();
 		hoveredTiles.clear();
 		if (compact)
@@ -426,7 +436,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 			final boolean collapsed = compact && icon != null && !plugin.isHotKeyPressed() && !hoveredTiles.contains(worldPoint);
 			final int textWidth = fm.stringWidth(itemString);
 			// collapsed icons stack with their own gap so they do not overlap
-			final int lineGap = collapsed ? Math.max(STRING_GAP, iconHeight + 2) : STRING_GAP;
+			final int lineGap = collapsed ? Math.max(STRING_GAP, iconHeight + 2) : expandedGap;
 			// collapsed stacks keep a short "x 3" label after the icon
 			final String stackLabel = compactQuantity && quantityFormat != QuantityFormat.HIDDEN && item.getQuantity() > 1 ? formatStack(item.getQuantity(), quantityFormat) : null;
 			final String collapsedLabel = collapsed ? stackLabel : null;
@@ -499,16 +509,31 @@ public class GroundItemsModifiableOverlay extends Overlay
 			// value-tier box around the icon
 			RoundRectangle2D box = null;
 			Color boxColor = null;
+			boolean shimmer = false;
 			if (icon != null && iconBoxTier != HighlightTier.OFF)
 			{
 				final long value = plugin.getValueByMode(item.getGePrice(), item.getHaPrice());
 				if (value > iconBoxTier.getValueFromTier(config))
 				{
 					boxColor = plugin.getPriceTierColor(value);
-					box = new RoundRectangle2D.Float(iconX - BOX_PAD, iconY - BOX_PAD,
-						iconWidth + 2 * BOX_PAD, iconHeight + 2 * BOX_PAD, BOX_ARC, BOX_ARC);
+					if (!collapsed && boxWrapsName)
+					{
+						// one rectangle around icon and name
+						final int top = Math.min(iconY, textY - fm.getAscent());
+						final int bottom = Math.max(iconY + iconHeight, textY + fm.getDescent());
+						box = new RoundRectangle2D.Float(iconX - BOX_PAD, top - BOX_PAD,
+							iconSpan + textWidth + 2 * BOX_PAD, bottom - top + 2 * BOX_PAD, BOX_ARC, BOX_ARC);
+					}
+					else
+					{
+						box = new RoundRectangle2D.Float(iconX - BOX_PAD, iconY - BOX_PAD,
+							iconWidth + 2 * BOX_PAD, iconHeight + 2 * BOX_PAD, BOX_ARC, BOX_ARC);
+					}
+					shimmer = shimmerTier != HighlightTier.OFF && value >= shimmerTier.getValueFromTier(config);
 					graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-					graphics.setColor(ColorUtil.colorWithAlpha(boxColor, 50));
+					// shimmering boxes breathe between a faint and a stronger fill
+					final int fillAlpha = shimmer ? (int) (40 + 45 * shimmerPulse()) : 50;
+					graphics.setColor(ColorUtil.colorWithAlpha(boxColor, fillAlpha));
 					graphics.fill(box);
 				}
 			}
@@ -516,6 +541,10 @@ public class GroundItemsModifiableOverlay extends Overlay
 			if (icon != null)
 			{
 				graphics.drawImage(icon, iconX, iconY, iconWidth, iconHeight, null);
+			}
+			if (shimmer)
+			{
+				drawShimmer(graphics, box);
 			}
 
 			final TimerInfo timer = timerInfo(item);
@@ -678,7 +707,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 			textComponent.setText(text);
 			textComponent.setColor(plugin.getPriceTierColor(value));
 			textComponent.setOutline(outline);
-			textComponent.setPosition(new java.awt.Point(textPoint.getX(), textPoint.getY() - STRING_GAP * (lastOffset + 1)));
+			textComponent.setPosition(new java.awt.Point(textPoint.getX(), textPoint.getY() - expandedGap * (lastOffset + 1)));
 			textComponent.render(graphics);
 		}
 	}
@@ -1157,6 +1186,41 @@ public class GroundItemsModifiableOverlay extends Overlay
 			graphics.setColor(PUBLIC_TIMER_COLOR);
 			graphics.fill(new java.awt.geom.Ellipse2D.Float(at[0] - 1.5f, at[1] - 1.5f, 3f, 3f));
 		}
+	}
+
+	/** 0..1, slow breathing shared by every shimmering box. */
+	private static double shimmerPulse()
+	{
+		return (Math.sin(System.currentTimeMillis() / 600.0) + 1) / 2;
+	}
+
+	/** A soft diagonal band of light that sweeps left to right across the box, then rests. */
+	private static void drawShimmer(Graphics2D graphics, RoundRectangle2D box)
+	{
+		final double t = (System.currentTimeMillis() % SHIMMER_PERIOD_MS) / (double) SHIMMER_PERIOD_MS;
+		// the sweep takes the first 45% of the period; the rest is a pause
+		final double sweep = t / 0.45;
+		if (sweep > 1)
+		{
+			return;
+		}
+		final float band = (float) Math.max(10, box.getHeight());
+		final float travel = (float) box.getWidth() + band * 2;
+		final float cx = (float) (box.getX() - band + travel * sweep);
+		final float cy = (float) box.getCenterY();
+		// one band, slanted: clear -> bright -> clear across its width, tilted by the height
+		final java.awt.LinearGradientPaint paint = new java.awt.LinearGradientPaint(
+			new java.awt.geom.Point2D.Float(cx - band / 2, cy + band / 4),
+			new java.awt.geom.Point2D.Float(cx + band / 2, cy - band / 4),
+			new float[]{0f, 0.5f, 1f},
+			new Color[]{new Color(255, 255, 255, 0), new Color(255, 255, 255, 110), new Color(255, 255, 255, 0)});
+		final Shape oldClip = graphics.getClip();
+		final java.awt.Paint oldPaint = graphics.getPaint();
+		graphics.clip(box);
+		graphics.setPaint(paint);
+		graphics.fill(new Rectangle2D.Float(cx - band, (float) box.getY(), band * 2, (float) box.getHeight()));
+		graphics.setPaint(oldPaint);
+		graphics.setClip(oldClip);
 	}
 
 	/** Rounded-box outline starting at top centre and running clockwise. */

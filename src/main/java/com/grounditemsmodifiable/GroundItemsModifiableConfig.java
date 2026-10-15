@@ -53,7 +53,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.7.0";
+	String VERSION = "1.8.0";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
@@ -286,10 +286,34 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "iconBoxWrapsName",
+		name = "Box wraps name",
+		description = "When a tile shows names (always, or while hovered in icons-only mode), the tier box grows to wrap the icon and the name together.",
+		position = 9,
+		section = overlaySection
+	)
+	default boolean iconBoxWrapsName()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "shimmerTier",
+		name = "Shimmer from tier",
+		description = "Tier boxes of items at or above this value tier pulse softly and have a light sweep across them. Needs 'Icon box from tier'.",
+		position = 10,
+		section = overlaySection
+	)
+	default HighlightTier shimmerTier()
+	{
+		return HighlightTier.HIGH;
+	}
+
+	@ConfigItem(
 		keyName = "showTileTotal",
 		name = "Tile value total",
 		description = "When two or more items share a tile, draw a total value line above them, coloured by value tier.",
-		position = 9,
+		position = 11,
 		section = overlaySection
 	)
 	default boolean showTileTotal()
@@ -301,7 +325,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileTotalMinimum",
 		name = "Total minimum value",
 		description = "Only show the tile total when it is at least this much.",
-		position = 10,
+		position = 12,
 		section = overlaySection
 	)
 	default int tileTotalMinimum()

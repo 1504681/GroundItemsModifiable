@@ -24,7 +24,7 @@ Ground overlay
 | Show item icons | on | Icon next to the name on the ground |
 | Icon size | 16 px | Icon height |
 | Icons only until hovered | off | Only icons on the ground; a tile expands while the game offers Take on it, or while the hotkey is held |
-| Always expanded from tier | off | In icons-only mode, items above this tier always show name and price (e.g. Medium) |
+| Always expanded from tier | High | In icons-only mode, items above this tier always show name and price |
 | Stack size next to icon | Number only | Collapsed icons show `1,000` right after the icon; can follow the names format or be off |
 | Icon box from tier | Low | Tier-coloured box around icons of items worth at least this tier; with the ring timer its border is the timer |
 | Box wraps name | on | When names show, the tier box wraps icon and name in one rectangle |
@@ -73,6 +73,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.10.1: always expanded from tier defaults to High
 - 1.10.0: rows follow the right-click menu order (top row = left-click Take); "Always expanded from tier" keeps valuable items named in icons-only mode
 - 1.9.3: icon box from tier defaults to Low
 - 1.9.2: tighter stacking: each row is only as tall as its icon or name, box and visible bar, with a 2 px gap

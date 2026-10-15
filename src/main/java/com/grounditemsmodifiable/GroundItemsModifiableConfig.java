@@ -54,7 +54,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.10.0";
+	String VERSION = "1.10.1";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
@@ -271,7 +271,7 @@ public interface GroundItemsModifiableConfig extends Config
 	)
 	default HighlightTier expandTier()
 	{
-		return HighlightTier.OFF;
+		return HighlightTier.HIGH;
 	}
 
 	@ConfigItem(

@@ -68,6 +68,9 @@ import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import net.runelite.api.Client;
+import net.runelite.api.ItemLayer;
+import net.runelite.api.Tile;
+import net.runelite.api.TileItem;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.MenuAction;
 import net.runelite.api.Actor;
@@ -133,6 +136,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private final Map<WorldPoint, long[]> tileTotals = new LinkedHashMap<>();
 	// compact mode: tiles whose items the game currently offers under the cursor
 	private final Set<WorldPoint> hoveredTiles = new HashSet<>();
+	// whether Tile.getGroundItems() lists the right-click menu's top item first; learned from the live menu
+	private Boolean pileListTopFirst;
 
 	@Inject
 	private GroundItemsModifiableOverlay(Client client, GroundItemsModifiablePlugin plugin, GroundItemsModifiableConfig config, ItemManager itemManager)
@@ -321,31 +326,42 @@ public class GroundItemsModifiableOverlay extends Overlay
 		final HighlightTier iconBoxTier = config.iconBoxTier();
 		final boolean boxWrapsName = config.iconBoxWrapsName();
 		final HighlightTier shimmerTier = config.shimmerTier();
+		final HighlightTier expandTier = config.expandTier();
+		final boolean menuOrder = config.menuOrder();
 		final BarWidth barWidth = config.barWidth();
 		hoveredTiles.clear();
-		if (compact)
+		// Ground item entries under the cursor, per tile: item id -> position in the menu (0 = top, the
+		// left-click option). Entries are stored bottom first, so walk them backwards.
+		final Map<Long, Map<Integer, Integer>> menuTiles = new HashMap<>();
+		if (compact || menuOrder)
 		{
 			// A tile expands exactly when the game offers one of its items under the cursor ("Take", "Examine"...).
 			// The game's own hit test is stable, unlike a box around icons whose layout changes when expanding.
 			// Ground item entries carry the tile's scene x/y in param0/param1 plus the world view id (-1 is the
 			// main world), so match on exactly those instead of converting to world coordinates.
-			final Set<Long> menuTiles = new HashSet<>();
-			for (MenuEntry entry : client.getMenuEntries())
+			final MenuEntry[] entries = client.getMenuEntries();
+			for (int i = entries.length - 1; i >= 0; i--)
 			{
+				final MenuEntry entry = entries[i];
 				final MenuAction type = entry.getType();
 				if (type == MenuAction.GROUND_ITEM_FIRST_OPTION || type == MenuAction.GROUND_ITEM_SECOND_OPTION
 					|| type == MenuAction.GROUND_ITEM_THIRD_OPTION || type == MenuAction.GROUND_ITEM_FOURTH_OPTION
 					|| type == MenuAction.GROUND_ITEM_FIFTH_OPTION || type == MenuAction.EXAMINE_ITEM_GROUND)
 				{
-					menuTiles.add(sceneKey(entry.getWorldViewId(), entry.getParam0(), entry.getParam1()));
+					final Map<Integer, Integer> ranks = menuTiles.computeIfAbsent(
+						sceneKey(entry.getWorldViewId(), entry.getParam0(), entry.getParam1()), k -> new HashMap<>());
+					ranks.putIfAbsent(entry.getIdentifier(), ranks.size());
 				}
 			}
+		}
+		if (compact)
+		{
 			if (!menuTiles.isEmpty())
 			{
 				for (GroundItem item : visibleItems)
 				{
 					final LocalPoint lp = item.getItemLayer().getLocalLocation();
-					if (lp != null && menuTiles.contains(sceneKey(item.getItemLayer().getWorldView().getId(), lp.getSceneX(), lp.getSceneY())))
+					if (lp != null && menuTiles.containsKey(sceneKey(item.getItemLayer().getWorldView().getId(), lp.getSceneX(), lp.getSceneY())))
 					{
 						hoveredTiles.add(item.getItemLayer().getWorldLocation());
 					}
@@ -369,6 +385,22 @@ public class GroundItemsModifiableOverlay extends Overlay
 				order.put(item, plugin.isHotKeyPressed() ? item.getOffset() : n);
 				rowsByTile.computeIfAbsent(wp, k -> new ArrayList<>()).add(item);
 			}
+			if (menuOrder)
+			{
+				// rows stack upwards, so the menu's top item gets the highest order and is drawn on top
+				for (List<GroundItem> rows : rowsByTile.values())
+				{
+					final Map<Integer, Integer> ranks = pileRanks(rows.get(0).getItemLayer(), menuTiles);
+					if (ranks != null)
+					{
+						for (GroundItem item : rows)
+						{
+							final Integer rank = ranks.get(item.getId());
+							order.put(item, rank != null ? -rank : Integer.MIN_VALUE + order.get(item));
+						}
+					}
+				}
+			}
 			final int ascent = fm.getAscent();
 			final int descent = fm.getDescent();
 			for (Map.Entry<WorldPoint, List<GroundItem>> tile : rowsByTile.entrySet())
@@ -384,7 +416,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 					final boolean hasBox = showIcons && hasTierBox(item, iconBoxTier);
 					final TimerInfo t = groundItemTimers == DespawnTimerMode.BAR ? timerInfo(item) : null;
 					final boolean hasBar = t != null && (plugin.isHotKeyPressed() || timerVisible(t));
-					final boolean hasText = !tileCollapsed || (item.getQuantity() > 1 && collapsedQuantity != CollapsedQuantity.OFF);
+					final boolean hasText = !tileCollapsed || hasTierBox(item, expandTier) || (item.getQuantity() > 1 && collapsedQuantity != CollapsedQuantity.OFF);
 					int top;
 					int bottom;
 					int iconBottom = 0;
@@ -515,7 +547,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 			}
 
 			final WorldPoint worldPoint = item.getItemLayer().getWorldLocation();
-			final boolean collapsed = compact && icon != null && !plugin.isHotKeyPressed() && !hoveredTiles.contains(worldPoint);
+			final boolean collapsed = compact && icon != null && !plugin.isHotKeyPressed() && !hoveredTiles.contains(worldPoint)
+				&& !hasTierBox(item, expandTier);
 			final int textWidth = fm.stringWidth(itemString);
 			// collapsed stacks keep a short "x 3" label after the icon
 			// collapsed icons: just "1,000" by default, or the names' format; expanded names keep "x 1,000"
@@ -1386,6 +1419,82 @@ public class GroundItemsModifiableOverlay extends Overlay
 			ly = c[1];
 		}
 		return new float[]{lx, ly};
+	}
+
+	/**
+	 * Item id -> position in the right-click menu (0 = top) for the pile on this item layer's tile. Taken from
+	 * the live menu when the cursor is over the tile, otherwise from the tile's item list. That list is compared
+	 * against the live menu whenever both are known, so its direction is learned rather than assumed.
+	 */
+	private Map<Integer, Integer> pileRanks(ItemLayer layer, Map<Long, Map<Integer, Integer>> menuTiles)
+	{
+		final LocalPoint lp = layer.getLocalLocation();
+		final WorldView wv = layer.getWorldView();
+		if (lp == null || wv == null)
+		{
+			return null;
+		}
+		final Tile[][][] tiles = wv.getScene().getTiles();
+		final int plane = layer.getPlane();
+		final int x = lp.getSceneX();
+		final int y = lp.getSceneY();
+		if (plane < 0 || plane >= tiles.length || x < 0 || x >= tiles[plane].length || y < 0 || y >= tiles[plane][x].length)
+		{
+			return null;
+		}
+		final Tile tile = tiles[plane][x][y];
+		final List<TileItem> pile = tile != null ? tile.getGroundItems() : null;
+
+		final Map<Integer, Integer> live = menuTiles.get(sceneKey(wv.getId(), x, y));
+		if (pile == null || pile.isEmpty())
+		{
+			return live;
+		}
+
+		final List<Integer> ids = new ArrayList<>();
+		for (TileItem ti : pile)
+		{
+			if (!ids.contains(ti.getId()))
+			{
+				ids.add(ti.getId());
+			}
+		}
+		if (live != null && live.size() > 1)
+		{
+			// learn which end of the list the menu starts at from two items both lists contain
+			int first = -1;
+			for (int id : ids)
+			{
+				final Integer rank = live.get(id);
+				if (rank == null)
+				{
+					continue;
+				}
+				if (first < 0)
+				{
+					first = rank;
+				}
+				else if (rank != first)
+				{
+					pileListTopFirst = rank > first;
+					break;
+				}
+			}
+			return live;
+		}
+		if (live != null)
+		{
+			return live;
+		}
+
+		// until the menu has been seen over a pile, assume the end holding the item drawn on top is the menu's top
+		final boolean topFirst = pileListTopFirst != null ? pileListTopFirst : pile.get(0) == layer.getTop() || pile.get(pile.size() - 1) != layer.getTop();
+		final Map<Integer, Integer> ranks = new HashMap<>();
+		for (int i = 0; i < ids.size(); i++)
+		{
+			ranks.put(ids.get(topFirst ? i : ids.size() - 1 - i), i);
+		}
+		return ranks;
 	}
 
 	private boolean hasTierBox(GroundItem item, HighlightTier tier)

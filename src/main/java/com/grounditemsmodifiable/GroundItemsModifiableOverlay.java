@@ -375,9 +375,10 @@ public class GroundItemsModifiableOverlay extends Overlay
 			// collapsed icons stack with their own gap so they do not overlap
 			final int lineGap = collapsed ? Math.max(STRING_GAP, iconHeight + 2) : STRING_GAP;
 			// collapsed stacks keep a short "x 3" label after the icon
-			final String collapsedLabel = collapsed && compactQuantity && item.getQuantity() > 1
-				? formatStack(item.getQuantity(), quantityFormat) : null;
-			final int collapsedLabelSpan = collapsedLabel != null ? ICON_GAP + fm.stringWidth(collapsedLabel) : 0;
+			final String stackLabel = compactQuantity && item.getQuantity() > 1 ? formatStack(item.getQuantity(), quantityFormat) : null;
+			final String collapsedLabel = collapsed ? stackLabel : null;
+			final int stackLabelSpan = stackLabel != null ? ICON_GAP + fm.stringWidth(stackLabel) : 0;
+			final int collapsedLabelSpan = collapsed ? stackLabelSpan : 0;
 
 			// getCanvasTextLocation centres the text on the tile; shift it so icon + text is centred instead
 			final int textX = textPoint.getX() + iconSpan / 2;
@@ -503,12 +504,18 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 			if (compact)
 			{
-				final Rectangle bounds = collapsed
-					? new Rectangle(iconX - 2, Math.min(iconY, textY - fm.getAscent()) - 2, iconWidth + collapsedLabelSpan + 4, Math.max(iconHeight, fm.getHeight()) + 4)
-					: new Rectangle(textX - iconSpan - 2, textY - fm.getAscent() - 2, iconSpan + textWidth + 4, fm.getHeight() + 4);
-				// A generous hitbox: expanding re-lays the tile's lines out, so a tight box around the icon lets the
-				// mouse fall outside it and the tile flickers between collapsed and expanded. Pad the drawn area by
-				// about an icon in every direction and include the ground tile itself.
+				// The hitbox must not change shape when the tile expands, or the mouse near its edge sits inside
+				// one layout and outside the other and the tile flickers. So cover both layouts every frame:
+				// where the icon (and stack label) sits when collapsed, and where icon + text sit when expanded.
+				final int collapsedGap = Math.max(STRING_GAP, iconHeight + 2);
+				final int collapsedTextY = textPoint.getY() - (collapsedGap * offset);
+				final int collapsedIconX = textPoint.getX() + textWidth / 2 - (iconWidth + stackLabelSpan) / 2;
+				final int collapsedIconY = collapsedTextY - (fm.getAscent() + iconHeight) / 2;
+				final Rectangle bounds = new Rectangle(collapsedIconX - 2, Math.min(collapsedIconY, collapsedTextY - fm.getAscent()) - 2,
+					iconWidth + stackLabelSpan + 4, Math.max(iconHeight, fm.getHeight()) + 4);
+				final int expandedTextY = textPoint.getY() - (STRING_GAP * offset);
+				bounds.add(new Rectangle(textX - iconSpan - 2, expandedTextY - fm.getAscent() - 2, iconSpan + textWidth + 4, fm.getHeight() + 4));
+				// and make it generous: about an icon of padding all round, plus the ground tile itself
 				final int pad = iconHeight + HOVER_PAD;
 				bounds.grow(pad, pad);
 				final Polygon tilePoly = Perspective.getCanvasTilePoly(client, groundPoint, item.getItemLayer().getHeight());

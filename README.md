@@ -63,7 +63,8 @@ Renames and menu
 
 ## Changelog
 
-- 1.4.1: icons-only hover area is about four times larger and includes the ground tile, no more flicker when a tile expands
+- 1.4.2: icons-only hover area covers both the collapsed and expanded layout, so it no longer flickers at its edge
+- 1.4.1: icons-only hover area is about four times larger and includes the ground tile
 - 1.4.0: turns the built-in Ground Items plugin off when this one is on (and the other way round); `::importgrounditems` re-copies its settings
 - 1.3.2: icons-only mode shows the stack size next to the icon
 - 1.3.1: settings regrouped into themed sections (overlay, colours, tiles, timer, renames, menu, lootbeams, notifications, hotkey)

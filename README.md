@@ -69,6 +69,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.9.1: collapsed icons line up in one column; row spacing leaves room for tier boxes and timer bars so rows no longer overlap
 - 1.9.0: collapsed icons show just the number (`1,000`), expanded names keep `x 1,000`; boxed items draw their name in the box colour
 - 1.8.0: tier box wraps the name when names show; shimmer on tier boxes from a chosen tier
 - 1.7.0: tile highlights drawn under NPCs and players; tier box around valuable item icons, doubling as the ring timer; tiles for highlighted or tier items; stack size can be hidden

@@ -52,6 +52,7 @@ Despawn timer
 | Pulse colour | red | Colour while pulsing |
 | Ring / bar thickness | 2 px | Thickness of the ring or bar |
 | Bar width | Icon and name | Bar spans icon and name, or just the icon |
+| Public marker on bar | on | Yellow tick on the bar where your drop becomes visible to others |
 
 Renames and menu
 
@@ -63,6 +64,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.5.0: bar timer marks where a drop goes public
 - 1.4.2: icons-only hover area covers both the collapsed and expanded layout, so it no longer flickers at its edge
 - 1.4.1: icons-only hover area is about four times larger and includes the ground tile
 - 1.4.0: turns the built-in Ground Items plugin off when this one is on (and the other way round); `::importgrounditems` re-copies its settings

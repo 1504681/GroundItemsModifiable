@@ -677,6 +677,18 @@ public interface GroundItemsModifiableConfig extends Config
 		return BarWidth.FULL;
 	}
 
+	@ConfigItem(
+		keyName = "barPublicMarker",
+		name = "Public marker on bar",
+		description = "Draw a small yellow mark on the bar at the point where your drop becomes visible to other players.",
+		position = 7,
+		section = timerSection
+	)
+	default boolean barPublicMarker()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Renames",
 		description = "Custom item names. Rename an item by holding the hotkey and right-clicking it.",

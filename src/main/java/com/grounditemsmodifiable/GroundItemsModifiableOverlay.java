@@ -867,6 +867,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 		Color color;
 		boolean pulsing;
 		boolean isPublic;
+		// where on the draining bar (0..1 of the full width) the item turns public; 0 when that never happens or already did
+		float publicFraction;
 	}
 
 	private TimerInfo timerInfo(GroundItem groundItem)
@@ -886,6 +888,15 @@ public class GroundItemsModifiableOverlay extends Overlay
 		info.remainingFraction = (float) info.remainingMillis / (despawnTime.toEpochMilli() - spawnTime.toEpochMilli());
 		info.color = timerColor;
 		info.isPublic = timerColor == PUBLIC_TIMER_COLOR;
+		if (!info.isPublic && !groundItem.isPrivate())
+		{
+			final long total = despawnTime.toEpochMilli() - spawnTime.toEpochMilli();
+			final long publicFor = total - groundItem.getVisibleTime().toMillis();
+			if (publicFor > 0 && publicFor < total)
+			{
+				info.publicFraction = (float) publicFor / total;
+			}
+		}
 		final int pulseSeconds = config.ringPulseSeconds();
 		info.pulsing = pulseSeconds > 0 && info.remainingMillis <= pulseSeconds * 1000L;
 		return info;
@@ -986,6 +997,16 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 		graphics.setColor(barColor);
 		graphics.fillRect(x, y, Math.max(1, Math.round(width * timer.remainingFraction)), height);
+
+		// tick where the drop goes public: the bar has drained to here when other players can see it
+		if (timer.publicFraction > 0 && config.barPublicMarker())
+		{
+			final int markX = x + Math.round(width * timer.publicFraction);
+			graphics.setColor(Color.BLACK);
+			graphics.fillRect(markX - 2, y - 2, 4, height + 4);
+			graphics.setColor(PUBLIC_TIMER_COLOR);
+			graphics.fillRect(markX - 1, y - 1, 2, height + 2);
+		}
 	}
 
 	private void drawRectangle(Graphics2D graphics, Rectangle rect, Color color, boolean inList, boolean hiddenBox)

@@ -69,6 +69,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.9.2: tighter stacking: each row is only as tall as its icon or name, box and visible bar, with a 2 px gap
 - 1.9.1: collapsed icons line up in one column; row spacing leaves room for tier boxes and timer bars so rows no longer overlap
 - 1.9.0: collapsed icons show just the number (`1,000`), expanded names keep `x 1,000`; boxed items draw their name in the box colour
 - 1.8.0: tier box wraps the name when names show; shimmer on tier boxes from a chosen tier

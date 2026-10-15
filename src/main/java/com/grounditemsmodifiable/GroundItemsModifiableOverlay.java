@@ -61,6 +61,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,8 +108,11 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private static final int BOX_ARC = 6;
 	// one light sweep across a shimmering box every this many ms
 	private static final long SHIMMER_PERIOD_MS = 2400;
-	// vertical spacing between expanded lines this frame
-	private int expandedGap = STRING_GAP;
+	// gap between stacked rows on a tile
+	private static final int ROW_GAP = 2;
+	// per frame: each drawn item's baseline offset from its tile's text point, and the top of each tile's stack
+	private final Map<GroundItem, Integer> rowDy = new IdentityHashMap<>();
+	private final Map<WorldPoint, Integer> tileTopDy = new HashMap<>();
 	// Points used to approximate the ground circle
 	private static final int CIRCLE_SEGMENTS = 24;
 	private static final Color PUBLIC_TIMER_COLOR = Color.YELLOW;
@@ -317,13 +321,6 @@ public class GroundItemsModifiableOverlay extends Overlay
 		final HighlightTier iconBoxTier = config.iconBoxTier();
 		final boolean boxWrapsName = config.iconBoxWrapsName();
 		final HighlightTier shimmerTier = config.shimmerTier();
-		// tier boxes are taller than a text line; spread expanded lines so neighbouring boxes do not overlap
-		// Row spacing reserves room for everything a row can draw, so rows never overlap and do not jump
-		// when a box or bar appears: the icon/text, the tier box padding and the timer bar under it.
-		final int boxRoom = showIcons && iconBoxTier != HighlightTier.OFF ? 2 * BOX_PAD : 0;
-		final int barRoom = groundItemTimers == DespawnTimerMode.BAR ? config.ringWidth() + 3 : 0;
-		expandedGap = Math.max(STRING_GAP, (showIcons ? Math.max(iconHeight, fm.getHeight()) : fm.getHeight()) + boxRoom + 2) + barRoom;
-		final int collapsedGap = Math.max(STRING_GAP, iconHeight + boxRoom + 3) + barRoom;
 		final BarWidth barWidth = config.barWidth();
 		hoveredTiles.clear();
 		if (compact)
@@ -352,6 +349,86 @@ public class GroundItemsModifiableOverlay extends Overlay
 					{
 						hoveredTiles.add(item.getItemLayer().getWorldLocation());
 					}
+				}
+			}
+		}
+
+		// Pass 2b: row layout. Each row is as tall as what it actually draws (icon or name, tier box padding,
+		// a visible timer bar) and rows stack upwards from the tile with a small fixed gap, so rows without a
+		// box or bar sit tight and nothing overlaps.
+		rowDy.clear();
+		tileTopDy.clear();
+		{
+			final Map<WorldPoint, List<GroundItem>> rowsByTile = new HashMap<>();
+			final Map<GroundItem, Integer> order = new IdentityHashMap<>();
+			final Map<WorldPoint, Integer> counter = new HashMap<>();
+			for (GroundItem item : visibleItems)
+			{
+				final WorldPoint wp = item.getItemLayer().getWorldLocation();
+				final int n = counter.merge(wp, 1, Integer::sum) - 1;
+				order.put(item, plugin.isHotKeyPressed() ? item.getOffset() : n);
+				rowsByTile.computeIfAbsent(wp, k -> new ArrayList<>()).add(item);
+			}
+			final int ascent = fm.getAscent();
+			final int descent = fm.getDescent();
+			for (Map.Entry<WorldPoint, List<GroundItem>> tile : rowsByTile.entrySet())
+			{
+				final List<GroundItem> rows = tile.getValue();
+				rows.sort(java.util.Comparator.comparingInt(order::get));
+				final boolean tileCollapsed = compact && !plugin.isHotKeyPressed() && !hoveredTiles.contains(tile.getKey());
+				int dy = 0;
+				int prevTop = 0;
+				boolean first = true;
+				for (GroundItem item : rows)
+				{
+					final boolean hasBox = showIcons && hasTierBox(item, iconBoxTier);
+					final TimerInfo t = groundItemTimers == DespawnTimerMode.BAR ? timerInfo(item) : null;
+					final boolean hasBar = t != null && (plugin.isHotKeyPressed() || timerVisible(t));
+					final boolean hasText = !tileCollapsed || (item.getQuantity() > 1 && collapsedQuantity != CollapsedQuantity.OFF);
+					int top;
+					int bottom;
+					int iconBottom = 0;
+					if (showIcons)
+					{
+						top = -(ascent + iconHeight) / 2;
+						bottom = top + iconHeight;
+						iconBottom = bottom;
+						if (hasText)
+						{
+							top = Math.min(top, -ascent);
+							bottom = Math.max(bottom, descent);
+						}
+					}
+					else
+					{
+						top = -ascent;
+						bottom = descent;
+					}
+					if (hasBox)
+					{
+						top -= BOX_PAD;
+						bottom += BOX_PAD;
+					}
+					if (hasBar)
+					{
+						// same placement as the bar drawing below
+						final int under = hasBox ? bottom + 2 : showIcons ? Math.max(2, iconBottom + 2) : 2;
+						bottom = Math.max(bottom, under + config.ringWidth());
+					}
+					if (!first)
+					{
+						int step = -prevTop + ROW_GAP + bottom;
+						if (!showIcons)
+						{
+							step = Math.max(step, STRING_GAP);
+						}
+						dy -= step;
+					}
+					rowDy.put(item, dy);
+					// relative to this row's baseline, for the next row's step
+					prevTop = top;
+					first = false;
+					tileTopDy.put(tile.getKey(), dy + top);
 				}
 			}
 		}
@@ -440,8 +517,6 @@ public class GroundItemsModifiableOverlay extends Overlay
 			final WorldPoint worldPoint = item.getItemLayer().getWorldLocation();
 			final boolean collapsed = compact && icon != null && !plugin.isHotKeyPressed() && !hoveredTiles.contains(worldPoint);
 			final int textWidth = fm.stringWidth(itemString);
-			// collapsed icons stack with their own gap so they do not overlap
-			final int lineGap = collapsed ? collapsedGap : expandedGap;
 			// collapsed stacks keep a short "x 3" label after the icon
 			// collapsed icons: just "1,000" by default, or the names' format; expanded names keep "x 1,000"
 			final String stackLabel;
@@ -462,7 +537,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 			// getCanvasTextLocation centres the text on the tile; shift it so icon + text is centred instead
 			final int textX = textPoint.getX() + iconSpan / 2;
-			final int textY = textPoint.getY() - (lineGap * offset);
+			final int textY = textPoint.getY() + rowDy.getOrDefault(item, 0);
 			// collapsed: icon (plus its stack label) centred on the tile; otherwise icon sits left of the text
 			// collapsed: every icon on the tile shares one centred column, stack numbers hang off to the right
 			final int iconX = collapsed ? textPoint.getX() + textWidth / 2 - iconWidth / 2 : textX - iconSpan;
@@ -731,7 +806,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 			textComponent.setText(text);
 			textComponent.setColor(plugin.getPriceTierColor(value));
 			textComponent.setOutline(outline);
-			textComponent.setPosition(new java.awt.Point(textPoint.getX(), textPoint.getY() - expandedGap * (lastOffset + 1)));
+			textComponent.setPosition(new java.awt.Point(textPoint.getX(), textPoint.getY() + tileTopDy.getOrDefault(entry.getKey(), 0) - ROW_GAP - graphics.getFontMetrics().getDescent()));
 			textComponent.render(graphics);
 		}
 	}
@@ -1311,6 +1386,11 @@ public class GroundItemsModifiableOverlay extends Overlay
 			ly = c[1];
 		}
 		return new float[]{lx, ly};
+	}
+
+	private boolean hasTierBox(GroundItem item, HighlightTier tier)
+	{
+		return tier != HighlightTier.OFF && plugin.getValueByMode(item.getGePrice(), item.getHaPrice()) > tier.getValueFromTier(config);
 	}
 
 	private static long sceneKey(int worldViewId, int sceneX, int sceneY)

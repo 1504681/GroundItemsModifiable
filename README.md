@@ -7,6 +7,11 @@ A fork of RuneLite's built-in Ground Items plugin with three additions:
 - **Tile fill and outline you control.** Mark the whole tile or just a circle in its centre. Tiles can use the item's colour or one custom colour for the outline and the fill, with separate opacity and outline width. One polygon per tile; the highlighted item on a tile decides its colour.
 - **Rename ground items.** Hold the hotkey (ALT by default), right-click an item and pick **Rename**. The custom name is used on the ground, in the right-click menu and when matching your highlight/hidden lists. **Reset name** or an empty rename restores the real name. Hotkey + right-click also offers **Renames > Export to clipboard** and **Import from clipboard** (or `::exportrenames` / `::importrenames` in chat); import merges into what you have. `*` works as a wildcard (`Grimy *=Herb`). With **Group doses and charges** on, renaming `Prayer potion(4)` to `PPot` covers every dose, and each item keeps its real dose: `PPot(3)`, `PPot(2)`, on the ground and in the menu.
 - **Item icons on the ground.** Every ground item label gets its icon drawn next to it, on by default. **Icons only until hovered** strips the ground down to icons; put the mouse on an item (when the game offers Take on it) or hold the hotkey and that tile's names, prices and total appear.
+  **Always expanded from tier** (High by default) keeps valuable items named even then, so nothing worth picking up hides as a bare icon:
+
+  | Not hovered: the Elder maul, above High, keeps its name | Hovered: the whole pile expands |
+  |---|---|
+  | <img src="docs/always-expanded-idle.png" width="380"> | <img src="docs/always-expanded-hovered.png" width="380"> |
 - **Ring and bar despawn timers.** Set *Despawn timer* to **Ring** (drains clockwise around the icon) or **Bar** (a thin bar under the icon and name that shrinks from the right). Under a configurable number of seconds both pulse in a colour of your choice, faster in the last five seconds. **Show timer** can hide any timer until the item is public or pulsing, or until fewer than N ticks remain; holding the hotkey always shows every timer.
 - **Tile value total.** When two or more items share a tile, one extra line above the stack shows their summed value, coloured by your value tiers.
 

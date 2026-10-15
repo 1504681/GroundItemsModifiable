@@ -64,6 +64,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.5.1: icons-only tiles stay open a moment after the mouse leaves and use a wider area to stay open, so edges cannot flicker
 - 1.5.0: bar timer marks where a drop goes public
 - 1.4.2: icons-only hover area covers both the collapsed and expanded layout, so it no longer flickers at its edge
 - 1.4.1: icons-only hover area is about four times larger and includes the ground tile

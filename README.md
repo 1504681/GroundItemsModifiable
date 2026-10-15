@@ -9,7 +9,7 @@ A fork of RuneLite's built-in Ground Items plugin with three additions:
 - **Item icons on the ground.** Every ground item label gets its icon drawn next to it, on by default. **Icons only until hovered** strips the ground down to icons; put the mouse on an item (when the game offers Take on it) or hold the hotkey and that tile's names, prices and total appear.
   **Always expanded from tier** (High by default) keeps valuable items named even then, so nothing worth picking up hides as a bare icon:
 
-  | Not hovered: the Elder maul, above High, keeps its name | Hovered: the whole pile expands |
+  | Not hovered: the Elder maul (Insane tier) keeps its name | Hovered: the whole pile expands |
   |---|---|
   | <img src="docs/always-expanded-idle.png" width="380"> | <img src="docs/always-expanded-hovered.png" width="380"> |
 - **Ring and bar despawn timers.** Set *Despawn timer* to **Ring** (drains clockwise around the icon) or **Bar** (a thin bar under the icon and name that shrinks from the right). Under a configurable number of seconds both pulse in a colour of your choice, faster in the last five seconds. **Show timer** can hide any timer until the item is public or pulsing, or until fewer than N ticks remain; holding the hotkey always shows every timer.

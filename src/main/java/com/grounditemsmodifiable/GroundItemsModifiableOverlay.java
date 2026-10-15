@@ -26,6 +26,7 @@
 package com.grounditemsmodifiable;
 
 import com.grounditemsmodifiable.config.BarWidth;
+import com.grounditemsmodifiable.config.CollapsedQuantity;
 import com.grounditemsmodifiable.config.DespawnTimerMode;
 import static com.grounditemsmodifiable.config.ItemHighlightMode.MENU;
 import static com.grounditemsmodifiable.config.ItemHighlightMode.NONE;
@@ -312,7 +313,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 		// Compact mode: a tile is expanded while the mouse is over what it drew last frame
 		final boolean compact = config.compactMode() && showIcons;
-		final boolean compactQuantity = config.compactQuantity();
+		final CollapsedQuantity collapsedQuantity = config.collapsedQuantity();
 		final HighlightTier iconBoxTier = config.iconBoxTier();
 		final boolean boxWrapsName = config.iconBoxWrapsName();
 		final HighlightTier shimmerTier = config.shimmerTier();
@@ -438,7 +439,20 @@ public class GroundItemsModifiableOverlay extends Overlay
 			// collapsed icons stack with their own gap so they do not overlap
 			final int lineGap = collapsed ? Math.max(STRING_GAP, iconHeight + 2) : expandedGap;
 			// collapsed stacks keep a short "x 3" label after the icon
-			final String stackLabel = compactQuantity && quantityFormat != QuantityFormat.HIDDEN && item.getQuantity() > 1 ? formatStack(item.getQuantity(), quantityFormat) : null;
+			// collapsed icons: just "1,000" by default, or the names' format; expanded names keep "x 1,000"
+			final String stackLabel;
+			if (item.getQuantity() <= 1 || collapsedQuantity == CollapsedQuantity.OFF)
+			{
+				stackLabel = null;
+			}
+			else if (collapsedQuantity == CollapsedQuantity.NUMBER)
+			{
+				stackLabel = QuantityFormatter.quantityToStackSize(item.getQuantity());
+			}
+			else
+			{
+				stackLabel = quantityFormat != QuantityFormat.HIDDEN ? formatStack(item.getQuantity(), quantityFormat) : null;
+			}
 			final String collapsedLabel = collapsed ? stackLabel : null;
 			final int stackLabelSpan = stackLabel != null ? ICON_GAP + fm.stringWidth(stackLabel) : 0;
 			final int collapsedLabelSpan = collapsed ? stackLabelSpan : 0;
@@ -515,7 +529,10 @@ public class GroundItemsModifiableOverlay extends Overlay
 				final long value = plugin.getValueByMode(item.getGePrice(), item.getHaPrice());
 				if (value > iconBoxTier.getValueFromTier(config))
 				{
-					boxColor = plugin.getPriceTierColor(value);
+					// a colour picked for this item wins; otherwise the tier's. The name below uses the same colour,
+					// so a highlighted-list colour cannot leave white text inside a green box
+					final Color picked = plugin.getItemColor(item.getId());
+					boxColor = picked != null ? picked : plugin.getPriceTierColor(value);
 					if (!collapsed && boxWrapsName)
 					{
 						// one rectangle around icon and name
@@ -546,6 +563,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 			{
 				drawShimmer(graphics, box);
 			}
+			// boxed items: name and stack size take the box's colour
+			final Color textColor = boxColor != null ? boxColor : color;
 
 			final TimerInfo timer = timerInfo(item);
 			final boolean timerShown = timer != null && (plugin.isHotKeyPressed() || timerVisible(timer));
@@ -625,7 +644,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 				if (collapsedLabel != null)
 				{
 					textComponent.setText(collapsedLabel);
-					textComponent.setColor(color);
+					textComponent.setColor(textColor);
 					textComponent.setOutline(outline);
 					textComponent.setPosition(new java.awt.Point(iconX + iconWidth + ICON_GAP, textY));
 					textComponent.render(graphics);
@@ -634,7 +653,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 			}
 
 			textComponent.setText(itemString);
-			textComponent.setColor(color);
+			textComponent.setColor(textColor);
 			textComponent.setOutline(outline);
 			textComponent.setPosition(new java.awt.Point(textX, textY));
 			textComponent.render(graphics);

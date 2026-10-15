@@ -35,6 +35,7 @@ import net.runelite.client.config.Keybind;
 import net.runelite.client.config.Range;
 import net.runelite.client.config.Units;
 import com.grounditemsmodifiable.config.BarWidth;
+import com.grounditemsmodifiable.config.CollapsedQuantity;
 import com.grounditemsmodifiable.config.DespawnTimerMode;
 import com.grounditemsmodifiable.config.HighlightTier;
 import com.grounditemsmodifiable.config.ItemHighlightMode;
@@ -53,7 +54,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.8.0";
+	String VERSION = "1.9.0";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
@@ -262,15 +263,15 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "compactQuantity",
+		keyName = "collapsedQuantity",
 		name = "Stack size next to icon",
-		description = "In icons-only mode, draw the stack size after the icon ('x 3' or '(3)' per the stack size format) in the item's colour.",
+		description = "In icons-only mode, the stack size drawn right after a collapsed icon: just the number, the same format as names ('Stack size format'), or nothing.",
 		position = 7,
 		section = overlaySection
 	)
-	default boolean compactQuantity()
+	default CollapsedQuantity collapsedQuantity()
 	{
-		return true;
+		return CollapsedQuantity.NUMBER;
 	}
 
 	@ConfigItem(

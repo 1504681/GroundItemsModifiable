@@ -25,7 +25,7 @@ Ground overlay
 | Icon size | 16 px | Icon height |
 | Icons only until hovered | off | Only icons on the ground; a tile expands while the game offers Take on it, or while the hotkey is held |
 | Stack size next to icon | Number only | Collapsed icons show `1,000` right after the icon; can follow the names format or be off |
-| Icon box from tier | Medium | Tier-coloured box around icons of items worth at least this tier; with the ring timer its border is the timer |
+| Icon box from tier | Low | Tier-coloured box around icons of items worth at least this tier; with the ring timer its border is the timer |
 | Box wraps name | on | When names show, the tier box wraps icon and name in one rectangle |
 | Shimmer from tier | High | Tier boxes of items worth at least this tier pulse and get a light sweep |
 | Tile value total | on | Total line above tiles with 2+ items |
@@ -71,6 +71,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.9.3: icon box from tier defaults to Low
 - 1.9.2: tighter stacking: each row is only as tall as its icon or name, box and visible bar, with a 2 px gap
 - 1.9.1: collapsed icons line up in one column; row spacing leaves room for tier boxes and timer bars so rows no longer overlap
 - 1.9.0: collapsed icons show just the number (`1,000`), expanded names keep `x 1,000`; boxed items draw their name in the box colour

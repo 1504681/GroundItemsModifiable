@@ -1,5 +1,5 @@
 <!-- managed by ~/homelab/bin/claude-md; hand-written notes go below the line -->
-# GroundItemsModifyable
+# GroundItemsModifiable
 
 A fork of RuneLite's built-in Ground Items plugin with three additions:
 
@@ -10,7 +10,7 @@ A fork of RuneLite's built-in Ground Items plugin with three additions:
 - `./gradlew test`
 
 ## Where things live
-- Git: https://github.com/1504681/GroundItemsModifyable.git (PUBLIC).
+- Git: https://github.com/1504681/GroundItemsModifiable.git (PUBLIC).
 
 ## Conventions
 Box-wide conventions and the port map: ~/homelab (BOX.md is imported into every session). Registry: add/edit services.toml then bin/apply. No Claude attribution or session links in anything pushed.

@@ -1,5 +1,7 @@
 # Ground Items Modifiable
 
+![Ground items stacked on a tile with tier boxes and a value total](docs/screenshot.png)
+
 A fork of RuneLite's built-in Ground Items plugin with three additions:
 
 - **Tile fill and outline you control.** Mark the whole tile or just a circle in its centre. Tiles can use the item's colour or one custom colour for the outline and the fill, with separate opacity and outline width. One polygon per tile; the highlighted item on a tile decides its colour.

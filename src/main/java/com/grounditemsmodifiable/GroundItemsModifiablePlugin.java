@@ -976,7 +976,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 		if (item.getQuantity() > 1)
 		{
 			final String stack = QuantityFormatter.quantityToStackSize(item.getQuantity());
-			if (config.quantityFormat() == QuantityFormat.TIMES)
+			if (config.quantityFormat() != QuantityFormat.PARENTHESES)
 			{
 				notificationStringBuilder.append(" x ").append(stack);
 			}

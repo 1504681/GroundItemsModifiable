@@ -18,11 +18,12 @@ Ground overlay
 
 | Setting | Default | What it does |
 |---|---|---|
-| Stack size format | x 3 | `Prayer potion(4) x 3` or `Prayer potion(4) (3)` |
+| Stack size format | x 3 | `Prayer potion(4) x 3`, `Prayer potion(4) (3)`, or hidden |
 | Show item icons | on | Icon next to the name on the ground |
 | Icon size | 16 px | Icon height |
 | Icons only until hovered | off | Only icons on the ground; a tile expands while the game offers Take on it, or while the hotkey is held |
 | Stack size next to icon | on | Icons-only mode shows `x 3` after the icon in the item colour |
+| Icon box from tier | Medium | Tier-coloured box around icons of items worth at least this tier; with the ring timer its border is the timer |
 | Tile value total | on | Total line above tiles with 2+ items |
 | Total minimum value | 0 | Hide totals below this value |
 
@@ -32,8 +33,10 @@ Tile highlight
 |---|---|---|
 | Highlight tiles | off | Draw tiles under ground items |
 | Shape | Whole tile | Outline the whole tile, or draw a circle in its middle |
+| Draw under NPCs and players | on | NPCs and players stay on top of tile highlights |
 | Circle size | 40 % | Circle diameter relative to the tile width |
 | Highlighted items only | off | Only tiles of highlighted and value-tier items |
+| ...or worth at least | Off | With highlighted-only on, also tiles of items worth at least this tier |
 | Outline colour | Item colour | Item colour or custom colour |
 | Custom outline colour | white | Used when outline colour is custom |
 | Outline width | 2 px | 0 removes the outline |
@@ -64,6 +67,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.7.0: tile highlights drawn under NPCs and players; tier box around valuable item icons, doubling as the ring timer; tiles for highlighted or tier items; stack size can be hidden
 - 1.6.1: fix icons-only tiles not expanding on hover in the main world; version shown as the last settings section
 - 1.6.0: icons-only tiles expand when the game offers Take on one of their items, replacing the pixel hover area
 - 1.5.1: icons-only tiles stay open a moment after the mouse leaves and use a wider area to stay open, so edges cannot flicker

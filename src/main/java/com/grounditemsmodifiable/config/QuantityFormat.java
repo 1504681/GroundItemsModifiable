@@ -8,7 +8,8 @@ import lombok.Getter;
 public enum QuantityFormat
 {
 	TIMES("x 3"),
-	PARENTHESES("(3)");
+	PARENTHESES("(3)"),
+	HIDDEN("Hidden");
 
 	private final String name;
 

@@ -42,6 +42,10 @@ import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
+import java.awt.geom.RoundRectangle2D;
+import java.awt.geom.PathIterator;
+import java.awt.geom.Path2D;
+import java.awt.geom.Area;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
@@ -63,6 +67,9 @@ import javax.inject.Inject;
 import net.runelite.api.Client;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.MenuAction;
+import net.runelite.api.Actor;
+import net.runelite.api.NPC;
+import com.grounditemsmodifiable.config.HighlightTier;
 import net.runelite.api.Perspective;
 import net.runelite.api.Player;
 import net.runelite.api.Point;
@@ -93,6 +100,9 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private static final int RECTANGLE_SIZE = 8;
 	// Gap between the item icon and the item name
 	private static final int ICON_GAP = 3;
+	// icon box: padding around the icon and corner rounding
+	private static final int BOX_PAD = 3;
+	private static final int BOX_ARC = 6;
 	// Points used to approximate the ground circle
 	private static final int CIRCLE_SEGMENTS = 24;
 	private static final Color PUBLIC_TIMER_COLOR = Color.YELLOW;
@@ -257,7 +267,32 @@ public class GroundItemsModifiableOverlay extends Overlay
 		// Pass 2: tiles go under everything else, one polygon per tile
 		if (config.highlightTiles())
 		{
-			renderTiles(graphics);
+			if (config.tilesUnderActors())
+			{
+				// no overlay layer sits between the ground and actors, so cut every NPC and player's outline
+				// out of the drawing area instead: the tile then looks like it is under them
+				final Shape oldClip = graphics.getClip();
+				final Area clip = new Area(oldClip != null ? oldClip : new Rectangle(0, 0, client.getCanvasWidth(), client.getCanvasHeight()));
+				final WorldView wv = client.getTopLevelWorldView();
+				if (wv != null)
+				{
+					for (NPC npc : wv.npcs())
+					{
+						subtractHull(clip, npc);
+					}
+					for (Player p : wv.players())
+					{
+						subtractHull(clip, p);
+					}
+				}
+				graphics.setClip(clip);
+				renderTiles(graphics);
+				graphics.setClip(oldClip);
+			}
+			else
+			{
+				renderTiles(graphics);
+			}
 		}
 
 		if (dontShowOverlay)
@@ -273,6 +308,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 		// Compact mode: a tile is expanded while the mouse is over what it drew last frame
 		final boolean compact = config.compactMode() && showIcons;
 		final boolean compactQuantity = config.compactQuantity();
+		final HighlightTier iconBoxTier = config.iconBoxTier();
 		final BarWidth barWidth = config.barWidth();
 		hoveredTiles.clear();
 		if (compact)
@@ -318,7 +354,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 			itemStringBuilder.append(item.getDisplayName());
 
-			if (item.getQuantity() > 1)
+			if (item.getQuantity() > 1 && quantityFormat != QuantityFormat.HIDDEN)
 			{
 				itemStringBuilder.append(' ').append(formatStack(item.getQuantity(), quantityFormat));
 			}
@@ -392,7 +428,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 			// collapsed icons stack with their own gap so they do not overlap
 			final int lineGap = collapsed ? Math.max(STRING_GAP, iconHeight + 2) : STRING_GAP;
 			// collapsed stacks keep a short "x 3" label after the icon
-			final String stackLabel = compactQuantity && item.getQuantity() > 1 ? formatStack(item.getQuantity(), quantityFormat) : null;
+			final String stackLabel = compactQuantity && quantityFormat != QuantityFormat.HIDDEN && item.getQuantity() > 1 ? formatStack(item.getQuantity(), quantityFormat) : null;
 			final String collapsedLabel = collapsed ? stackLabel : null;
 			final int stackLabelSpan = stackLabel != null ? ICON_GAP + fm.stringWidth(stackLabel) : 0;
 			final int collapsedLabelSpan = collapsed ? stackLabelSpan : 0;
@@ -460,15 +496,46 @@ public class GroundItemsModifiableOverlay extends Overlay
 				drawRectangle(graphics, itemHighlightBox, topItem && mouseInHighlightBox ? Color.GREEN : color, item.highlighted, false);
 			}
 
+			// value-tier box around the icon
+			RoundRectangle2D box = null;
+			Color boxColor = null;
+			if (icon != null && iconBoxTier != HighlightTier.OFF)
+			{
+				final long value = plugin.getValueByMode(item.getGePrice(), item.getHaPrice());
+				if (value > iconBoxTier.getValueFromTier(config))
+				{
+					boxColor = plugin.getPriceTierColor(value);
+					box = new RoundRectangle2D.Float(iconX - BOX_PAD, iconY - BOX_PAD,
+						iconWidth + 2 * BOX_PAD, iconHeight + 2 * BOX_PAD, BOX_ARC, BOX_ARC);
+					graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+					graphics.setColor(ColorUtil.colorWithAlpha(boxColor, 50));
+					graphics.fill(box);
+				}
+			}
+
 			if (icon != null)
 			{
 				graphics.drawImage(icon, iconX, iconY, iconWidth, iconHeight, null);
 			}
 
 			final TimerInfo timer = timerInfo(item);
-			if (timer != null && (plugin.isHotKeyPressed() || timerVisible(timer)))
+			final boolean timerShown = timer != null && (plugin.isHotKeyPressed() || timerVisible(timer));
+			if (box != null && !(timerShown && groundItemTimers == DespawnTimerMode.RING))
 			{
-				if (groundItemTimers == DespawnTimerMode.RING)
+				graphics.setStroke(new BasicStroke(1.5f));
+				graphics.setColor(boxColor);
+				graphics.draw(box);
+			}
+			// whatever sits under the icon starts below the box
+			final int underIconY = box != null ? (int) Math.ceil(box.getMaxY()) + 2 : textY + 2;
+			if (timerShown)
+			{
+				if (groundItemTimers == DespawnTimerMode.RING && box != null)
+				{
+					// the box border is the timer
+					drawTimerBox(graphics, box, timer);
+				}
+				else if (groundItemTimers == DespawnTimerMode.RING)
 				{
 					if (icon != null)
 					{
@@ -481,20 +548,24 @@ public class GroundItemsModifiableOverlay extends Overlay
 				}
 				else if (groundItemTimers == DespawnTimerMode.BAR)
 				{
-					if (icon != null && (collapsed || barWidth == BarWidth.ICON))
+					if (box != null && (collapsed || barWidth == BarWidth.ICON))
 					{
-						drawTimerBar(graphics, iconX, textY + 2, iconWidth, timer);
+						drawTimerBar(graphics, (int) box.getX(), underIconY, (int) box.getWidth(), timer);
+					}
+					else if (icon != null && (collapsed || barWidth == BarWidth.ICON))
+					{
+						drawTimerBar(graphics, iconX, underIconY, iconWidth, timer);
 					}
 					else
 					{
-						drawTimerBar(graphics, textX - iconSpan, textY + 2, iconSpan + textWidth, timer);
+						drawTimerBar(graphics, textX - iconSpan, underIconY, iconSpan + textWidth, timer);
 					}
 				}
 				// When the hotkey is pressed the hidden/highlight boxes are drawn to the right of the text,
 				// so draw the pie since it is on the left hand side.
 				else if (groundItemTimers == DespawnTimerMode.PIE || plugin.isHotKeyPressed())
 				{
-					drawTimerPieOverlay(graphics, collapsed ? iconX : textX - iconSpan, textY, timer);
+					drawTimerPieOverlay(graphics, (collapsed ? iconX : textX - iconSpan) - (box != null ? BOX_PAD + 1 : 0), textY, timer);
 				}
 				else if (!collapsed && (groundItemTimers == DespawnTimerMode.SECONDS || groundItemTimers == DespawnTimerMode.TICKS))
 				{
@@ -678,9 +749,12 @@ public class GroundItemsModifiableOverlay extends Overlay
 		tileItems.clear();
 		final boolean highlightedOnly = config.tileHighlightedOnly();
 
+		final HighlightTier minTier = config.tileMinTier();
+		final long minValue = minTier == HighlightTier.OFF ? Long.MAX_VALUE : minTier.getValueFromTier(config);
 		for (GroundItem item : visibleItems)
 		{
-			if (highlightedOnly && !item.highlighted)
+			if (highlightedOnly && !item.highlighted
+				&& plugin.getValueByMode(item.getGePrice(), item.getHaPrice()) <= minValue)
 			{
 				continue;
 			}
@@ -1039,6 +1113,118 @@ public class GroundItemsModifiableOverlay extends Overlay
 		}
 
 	}
+	private static void subtractHull(Area clip, Actor actor)
+	{
+		final Shape hull = actor.getConvexHull();
+		if (hull != null)
+		{
+			clip.subtract(new Area(hull));
+		}
+	}
+
+	/**
+	 * Box border used as the despawn timer: a dark track, then the remaining time drawn clockwise from top centre.
+	 */
+	private void drawTimerBox(Graphics2D graphics, RoundRectangle2D box, TimerInfo timer)
+	{
+		final Path2D path = boxPerimeter(box);
+		final float length = pathLength(path);
+		final float width = config.ringWidth();
+		Color color = timer.color;
+		if (timer.pulsing)
+		{
+			color = pulsedColor(timer, pulsePhase(timer));
+		}
+
+		graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		graphics.setStroke(new BasicStroke(width + 2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
+		graphics.setColor(ColorUtil.colorWithAlpha(Color.BLACK, 120));
+		graphics.draw(path);
+
+		final float drawn = Math.max(0.5f, length * Math.max(0f, Math.min(1f, timer.remainingFraction)));
+		graphics.setStroke(new BasicStroke(width, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND, 10f,
+			new float[]{drawn, length + 1f}, 0f));
+		graphics.setColor(color);
+		graphics.draw(path);
+
+		// where the drop goes public, like on the bar
+		if (timer.publicFraction > 0 && config.barPublicMarker())
+		{
+			final float[] at = pointAlong(path, length * timer.publicFraction);
+			graphics.setStroke(new BasicStroke(1f));
+			graphics.setColor(Color.BLACK);
+			graphics.fill(new java.awt.geom.Ellipse2D.Float(at[0] - 2.5f, at[1] - 2.5f, 5f, 5f));
+			graphics.setColor(PUBLIC_TIMER_COLOR);
+			graphics.fill(new java.awt.geom.Ellipse2D.Float(at[0] - 1.5f, at[1] - 1.5f, 3f, 3f));
+		}
+	}
+
+	/** Rounded-box outline starting at top centre and running clockwise. */
+	private static Path2D boxPerimeter(RoundRectangle2D box)
+	{
+		final float x = (float) box.getX();
+		final float y = (float) box.getY();
+		final float w = (float) box.getWidth();
+		final float h = (float) box.getHeight();
+		final float r = (float) box.getArcWidth() / 2f;
+		final Path2D.Float p = new Path2D.Float();
+		p.moveTo(x + w / 2, y);
+		p.lineTo(x + w - r, y);
+		p.quadTo(x + w, y, x + w, y + r);
+		p.lineTo(x + w, y + h - r);
+		p.quadTo(x + w, y + h, x + w - r, y + h);
+		p.lineTo(x + r, y + h);
+		p.quadTo(x, y + h, x, y + h - r);
+		p.lineTo(x, y + r);
+		p.quadTo(x, y, x + r, y);
+		p.lineTo(x + w / 2, y);
+		return p;
+	}
+
+	private static float pathLength(Shape shape)
+	{
+		float length = 0;
+		final float[] c = new float[6];
+		float lx = 0;
+		float ly = 0;
+		for (PathIterator it = shape.getPathIterator(null, 0.5); !it.isDone(); it.next())
+		{
+			final int seg = it.currentSegment(c);
+			if (seg == PathIterator.SEG_LINETO)
+			{
+				length += (float) Math.hypot(c[0] - lx, c[1] - ly);
+			}
+			lx = c[0];
+			ly = c[1];
+		}
+		return length;
+	}
+
+	private static float[] pointAlong(Shape shape, float distance)
+	{
+		final float[] c = new float[6];
+		float lx = 0;
+		float ly = 0;
+		float travelled = 0;
+		for (PathIterator it = shape.getPathIterator(null, 0.5); !it.isDone(); it.next())
+		{
+			final int seg = it.currentSegment(c);
+			if (seg == PathIterator.SEG_LINETO)
+			{
+				final float d = (float) Math.hypot(c[0] - lx, c[1] - ly);
+				if (travelled + d >= distance && d > 0)
+				{
+					final float t = (distance - travelled) / d;
+					return new float[]{lx + (c[0] - lx) * t, ly + (c[1] - ly) * t};
+				}
+				travelled += d;
+			}
+			lx = c[0];
+			ly = c[1];
+		}
+		return new float[]{lx, ly};
+	}
+
 	private static long sceneKey(int worldViewId, int sceneX, int sceneY)
 	{
 		return ((long) worldViewId << 32) | ((sceneX & 0xFFFFL) << 16) | (sceneY & 0xFFFFL);

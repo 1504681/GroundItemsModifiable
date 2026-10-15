@@ -53,7 +53,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.6.1";
+	String VERSION = "1.7.0";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
@@ -202,7 +202,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "quantityFormat",
 		name = "Stack size format",
-		description = "How the stack size is written after the name: 'Prayer potion(4) x 3' or 'Prayer potion(4) (3)'.",
+		description = "How the stack size is written after the name: 'Prayer potion(4) x 3', 'Prayer potion(4) (3)', or hidden on the ground (notifications keep it).",
 		position = 2,
 		section = overlaySection
 	)
@@ -274,10 +274,22 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "iconBoxTier",
+		name = "Icon box from tier",
+		description = "Draw a box in the value-tier colour around the icons of items worth at least this tier. With the ring timer the box's border becomes the timer; the bar sits under the box.",
+		position = 8,
+		section = overlaySection
+	)
+	default HighlightTier iconBoxTier()
+	{
+		return HighlightTier.MEDIUM;
+	}
+
+	@ConfigItem(
 		keyName = "showTileTotal",
 		name = "Tile value total",
 		description = "When two or more items share a tile, draw a total value line above them, coloured by value tier.",
-		position = 8,
+		position = 9,
 		section = overlaySection
 	)
 	default boolean showTileTotal()
@@ -289,7 +301,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileTotalMinimum",
 		name = "Total minimum value",
 		description = "Only show the tile total when it is at least this much.",
-		position = 9,
+		position = 10,
 		section = overlaySection
 	)
 	default int tileTotalMinimum()
@@ -486,6 +498,18 @@ public interface GroundItemsModifiableConfig extends Config
 		return TileShape.TILE;
 	}
 
+	@ConfigItem(
+		keyName = "tilesUnderActors",
+		name = "Draw under NPCs and players",
+		description = "Leave NPCs and players on top of tile highlights instead of drawing over them.",
+		position = 11,
+		section = tileSection
+	)
+	default boolean tilesUnderActors()
+	{
+		return true;
+	}
+
 	@Range(min = 10, max = 100)
 	@ConfigItem(
 		keyName = "tileCircleSize",
@@ -503,7 +527,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "tileHighlightedOnly",
 		name = "Highlighted items only",
-		description = "Only draw tiles under highlighted and value-tier items, not every item.",
+		description = "Only draw tiles under highlighted items (plus items worth the tier below), not every item.",
 		position = 3,
 		section = tileSection
 	)
@@ -513,10 +537,22 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "tileMinTier",
+		name = "...or worth at least",
+		description = "With 'Highlighted items only' on, also draw tiles under items worth at least this value tier.",
+		position = 4,
+		section = tileSection
+	)
+	default HighlightTier tileMinTier()
+	{
+		return HighlightTier.OFF;
+	}
+
+	@ConfigItem(
 		keyName = "tileOutlineMode",
 		name = "Outline colour",
 		description = "Use the item's colour for the tile outline, or one custom colour for every tile.",
-		position = 4,
+		position = 5,
 		section = tileSection
 	)
 	default TileColorMode tileOutlineMode()
@@ -529,7 +565,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileOutlineColor",
 		name = "Custom outline colour",
 		description = "Tile outline colour when the outline mode is set to custom.",
-		position = 5,
+		position = 6,
 		section = tileSection
 	)
 	default Color tileOutlineColor()
@@ -542,7 +578,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileOutlineWidth",
 		name = "Outline width",
 		description = "Tile outline thickness in pixels. 0 removes the outline.",
-		position = 6,
+		position = 7,
 		section = tileSection
 	)
 	@Units(Units.PIXELS)
@@ -555,7 +591,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileFillMode",
 		name = "Fill colour",
 		description = "Fill the tile with the item's colour, one custom colour, or nothing.",
-		position = 7,
+		position = 8,
 		section = tileSection
 	)
 	default TileFillMode tileFillMode()
@@ -568,7 +604,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileFillOpacity",
 		name = "Item colour fill opacity",
 		description = "Opacity of the fill when the fill mode is the item's colour (0 = invisible, 255 = solid).",
-		position = 8,
+		position = 9,
 		section = tileSection
 	)
 	default int tileFillOpacity()
@@ -581,7 +617,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileFillColor",
 		name = "Custom fill colour",
 		description = "Tile fill colour (with opacity) when the fill mode is set to custom.",
-		position = 9,
+		position = 10,
 		section = tileSection
 	)
 	default Color tileFillColor()

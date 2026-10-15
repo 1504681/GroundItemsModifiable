@@ -124,7 +124,7 @@ import net.runelite.client.util.WildcardMatcher;
 )
 public class GroundItemsModifiablePlugin extends Plugin
 {
-	static final String VERSION = "1.6.0";
+	static final String VERSION = GroundItemsModifiableConfig.VERSION;
 	private static final String HIGHLIGHT_COLOR_PREFIX = "highlight_";
 	// pre-1.1 storage of renames, migrated into the renames text box on start
 	private static final String LEGACY_NAME_PREFIX = "name_";

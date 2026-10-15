@@ -279,19 +279,28 @@ public class GroundItemsModifiableOverlay extends Overlay
 		{
 			// A tile expands exactly when the game offers one of its items under the cursor ("Take", "Examine"...).
 			// The game's own hit test is stable, unlike a box around icons whose layout changes when expanding.
+			// Ground item entries carry the tile's scene x/y in param0/param1 plus the world view id (-1 is the
+			// main world), so match on exactly those instead of converting to world coordinates.
+			final Set<Long> menuTiles = new HashSet<>();
 			for (MenuEntry entry : client.getMenuEntries())
 			{
 				final MenuAction type = entry.getType();
-				if (type != MenuAction.GROUND_ITEM_FIRST_OPTION && type != MenuAction.GROUND_ITEM_SECOND_OPTION
-					&& type != MenuAction.GROUND_ITEM_THIRD_OPTION && type != MenuAction.GROUND_ITEM_FOURTH_OPTION
-					&& type != MenuAction.GROUND_ITEM_FIFTH_OPTION && type != MenuAction.EXAMINE_ITEM_GROUND)
+				if (type == MenuAction.GROUND_ITEM_FIRST_OPTION || type == MenuAction.GROUND_ITEM_SECOND_OPTION
+					|| type == MenuAction.GROUND_ITEM_THIRD_OPTION || type == MenuAction.GROUND_ITEM_FOURTH_OPTION
+					|| type == MenuAction.GROUND_ITEM_FIFTH_OPTION || type == MenuAction.EXAMINE_ITEM_GROUND)
 				{
-					continue;
+					menuTiles.add(sceneKey(entry.getWorldViewId(), entry.getParam0(), entry.getParam1()));
 				}
-				final WorldView wv = client.getWorldView(entry.getWorldViewId());
-				if (wv != null)
+			}
+			if (!menuTiles.isEmpty())
+			{
+				for (GroundItem item : visibleItems)
 				{
-					hoveredTiles.add(WorldPoint.fromScene(wv, entry.getParam0(), entry.getParam1(), wv.getPlane()));
+					final LocalPoint lp = item.getItemLayer().getLocalLocation();
+					if (lp != null && menuTiles.contains(sceneKey(item.getItemLayer().getWorldView().getId(), lp.getSceneX(), lp.getSceneY())))
+					{
+						hoveredTiles.add(item.getItemLayer().getWorldLocation());
+					}
 				}
 			}
 		}
@@ -1030,6 +1039,11 @@ public class GroundItemsModifiableOverlay extends Overlay
 		}
 
 	}
+	private static long sceneKey(int worldViewId, int sceneX, int sceneY)
+	{
+		return ((long) worldViewId << 32) | ((sceneX & 0xFFFFL) << 16) | (sceneY & 0xFFFFL);
+	}
+
 	private static String formatStack(int quantity, QuantityFormat format)
 	{
 		final String stack = QuantityFormatter.quantityToStackSize(quantity);

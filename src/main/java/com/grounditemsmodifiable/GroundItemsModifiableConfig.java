@@ -52,18 +52,28 @@ import com.grounditemsmodifiable.config.OwnershipFilterMode;
 public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
+	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
+	String VERSION = "1.6.1";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
 		keyName = "exclusiveWithCore",
 		name = "Replace built-in Ground Items",
 		description = "Turn the built-in Ground Items plugin off while this one is on, and turn this one off if you switch the built-in plugin back on.",
-		position = -1
+		position = 0,
+		section = aboutSection
 	)
 	default boolean exclusiveWithCore()
 	{
 		return true;
 	}
+
+	@ConfigSection(
+		name = "Ground Items Modifiable v" + VERSION,
+		description = "Plugin version and how it works alongside the built-in Ground Items plugin.",
+		position = 10
+	)
+	String aboutSection = "aboutSection";
 
 	@ConfigSection(
 		name = "Item lists",

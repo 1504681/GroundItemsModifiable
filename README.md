@@ -8,7 +8,7 @@ A fork of RuneLite's built-in Ground Items plugin with three additions:
 - **Ring and bar despawn timers.** Set *Despawn timer* to **Ring** (drains clockwise around the icon) or **Bar** (a thin bar under the icon and name that shrinks from the right). Under a configurable number of seconds both pulse in a colour of your choice, faster in the last five seconds. **Show timer** can hide any timer until the item is public or pulsing, or until fewer than N ticks remain; holding the hotkey always shows every timer.
 - **Tile value total.** When two or more items share a tile, one extra line above the stack shows their summed value, coloured by your value tiers.
 
-Everything else (highlight/hidden lists, value tiers, lootbeams, despawn timers, ownership filter, menu recolouring, per-item colours) works as in the original plugin. On first start the plugin copies all of your Ground Items settings (highlight and hidden lists, colours, value tiers, everything) and turns the built-in Ground Items plugin off, so it picks up where that one left off. Switching the built-in plugin back on turns this one off; **Replace built-in Ground Items** at the top of the settings disables that. `::importgrounditems` in chat copies the built-in settings again, replacing what is set here.
+Everything else (highlight/hidden lists, value tiers, lootbeams, despawn timers, ownership filter, menu recolouring, per-item colours) works as in the original plugin. On first start the plugin copies all of your Ground Items settings (highlight and hidden lists, colours, value tiers, everything) and turns the built-in Ground Items plugin off, so it picks up where that one left off. Switching the built-in plugin back on turns this one off; **Replace built-in Ground Items**, in the last settings section (its title shows the version), disables that. `::importgrounditems` in chat copies the built-in settings again, replacing what is set here.
 
 ## Settings
 
@@ -64,6 +64,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.6.1: fix icons-only tiles not expanding on hover in the main world; version shown as the last settings section
 - 1.6.0: icons-only tiles expand when the game offers Take on one of their items, replacing the pixel hover area
 - 1.5.1: icons-only tiles stay open a moment after the mouse leaves and use a wider area to stay open, so edges cannot flicker
 - 1.5.0: bar timer marks where a drop goes public

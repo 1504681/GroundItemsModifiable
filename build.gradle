@@ -58,7 +58,8 @@ tasks.register('run', JavaExec) {
 	mainClass = pluginMainClass
 
 	// assertions for this plugin only: core plugins trip their own asserts under -ea and crash the dev client
-	jvmArgs "-ea:com.grounditemsmodifiable..."
+	// RuneLite and ExternalPluginManager each check that asserts are on in their own class (startup dialog / refuse to load)
+	jvmArgs "-ea:com.grounditemsmodifiable...", "-ea:net.runelite.client.externalplugins.ExternalPluginManager", "-ea:net.runelite.client.RuneLite"
 	args "--developer-mode", "--debug"
 }
 

@@ -138,6 +138,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private final Set<WorldPoint> hoveredTiles = new HashSet<>();
 	// whether Tile.getGroundItems() lists the right-click menu's top item first; learned from the live menu
 	private Boolean pileListTopFirst;
+	// last live menu order seen per tile, so a pile keeps the order other plugins (Custom Menu Swaps...) gave it
+	private final Map<Long, Map<Integer, Integer>> menuMemory = new HashMap<>();
 
 	@Inject
 	private GroundItemsModifiableOverlay(Client client, GroundItemsModifiablePlugin plugin, GroundItemsModifiableConfig config, ItemManager itemManager)
@@ -1423,7 +1425,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 	/**
 	 * Item id -> position in the right-click menu (0 = top) for the pile on this item layer's tile. Taken from
-	 * the live menu when the cursor is over the tile, otherwise from the tile's item list. That list is compared
+	 * the live menu when the cursor is over the tile, else the last menu seen on it while it still holds the
+	 * same items, otherwise from the tile's item list. That list is compared
 	 * against the live menu whenever both are known, so its direction is learned rather than assumed.
 	 */
 	private Map<Integer, Integer> pileRanks(ItemLayer layer, Map<Long, Map<Integer, Integer>> menuTiles)
@@ -1445,7 +1448,16 @@ public class GroundItemsModifiableOverlay extends Overlay
 		final Tile tile = tiles[plane][x][y];
 		final List<TileItem> pile = tile != null ? tile.getGroundItems() : null;
 
-		final Map<Integer, Integer> live = menuTiles.get(sceneKey(wv.getId(), x, y));
+		final long key = sceneKey(wv.getId(), x, y);
+		final Map<Integer, Integer> live = menuTiles.get(key);
+		if (live != null)
+		{
+			if (menuMemory.size() > 512)
+			{
+				menuMemory.clear();
+			}
+			menuMemory.put(key, live);
+		}
 		if (pile == null || pile.isEmpty())
 		{
 			return live;
@@ -1461,8 +1473,12 @@ public class GroundItemsModifiableOverlay extends Overlay
 		}
 		if (live != null && live.size() > 1)
 		{
-			// learn which end of the list the menu starts at from two items both lists contain
-			int first = -1;
+			// learn which end of the list the menu starts at, but only from a menu in the game's own order:
+			// one reordered by another plugin is neither the list nor the list reversed
+			boolean up = true;
+			boolean down = true;
+			int prev = -1;
+			int seen = 0;
 			for (int id : ids)
 			{
 				final Integer rank = live.get(id);
@@ -1470,21 +1486,27 @@ public class GroundItemsModifiableOverlay extends Overlay
 				{
 					continue;
 				}
-				if (first < 0)
+				if (seen++ > 0)
 				{
-					first = rank;
+					up &= rank > prev;
+					down &= rank < prev;
 				}
-				else if (rank != first)
-				{
-					pileListTopFirst = rank > first;
-					break;
-				}
+				prev = rank;
+			}
+			if (seen > 1 && up != down)
+			{
+				pileListTopFirst = up;
 			}
 			return live;
 		}
 		if (live != null)
 		{
 			return live;
+		}
+		final Map<Integer, Integer> remembered = menuMemory.get(key);
+		if (remembered != null && remembered.keySet().containsAll(ids))
+		{
+			return remembered;
 		}
 
 		// until the menu has been seen over a pile, assume the end holding the item drawn on top is the menu's top

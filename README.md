@@ -73,6 +73,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.10.2: piles keep the menu order they showed on hover, so Custom Menu Swaps priorities stick after the mouse leaves
 - 1.10.1: always expanded from tier defaults to High
 - 1.10.0: rows follow the right-click menu order (top row = left-click Take); "Always expanded from tier" keeps valuable items named in icons-only mode
 - 1.9.3: icon box from tier defaults to Low

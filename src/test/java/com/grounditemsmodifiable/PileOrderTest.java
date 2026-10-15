@@ -55,6 +55,10 @@ public class PileOrderTest
 		when(layer.getTop()).thenReturn(pile.get(3));
 
 		final GroundItemsModifiableOverlay overlay = new ObjenesisStd().newInstance(GroundItemsModifiableOverlay.class);
+		// built without its constructor, so set the field initialiser by hand
+		final java.lang.reflect.Field memory = GroundItemsModifiableOverlay.class.getDeclaredField("menuMemory");
+		memory.setAccessible(true);
+		memory.set(overlay, new HashMap<>());
 		final Map<Long, Map<Integer, Integer>> none = new HashMap<>();
 
 		// item drawn on top is last in the list -> list read backwards
@@ -75,5 +79,21 @@ public class PileOrderTest
 		r = ranks(overlay, layer, none);
 		assertEquals(Integer.valueOf(0), r.get(1));
 		assertEquals(Integer.valueOf(2), r.get(3));
+
+		// a menu reordered by another plugin is remembered after the cursor leaves the tile
+		final Map<Integer, Integer> swapped = new HashMap<>();
+		swapped.put(2, 0);
+		swapped.put(3, 1);
+		swapped.put(1, 2);
+		menu.put((-1L << 32) | (10L << 16) | 20L, swapped);
+		ranks(overlay, layer, menu);
+		assertEquals(swapped, ranks(overlay, layer, none));
+
+		// once the pile holds an item the remembered menu never saw, fall back to the pile
+		final List<TileItem> grown = Arrays.asList(item(1), item(2), item(3), item(4));
+		when(tile.getGroundItems()).thenReturn(grown);
+		r = ranks(overlay, layer, none);
+		assertEquals(Integer.valueOf(0), r.get(1));
+		assertEquals(Integer.valueOf(3), r.get(4));
 	}
 }

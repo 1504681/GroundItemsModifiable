@@ -57,7 +57,8 @@ tasks.register('run', JavaExec) {
 	classpath = sourceSets.test.runtimeClasspath
 	mainClass = pluginMainClass
 
-	jvmArgs "-ea"
+	// assertions for this plugin only: core plugins trip their own asserts under -ea and crash the dev client
+	jvmArgs "-ea:com.grounditemsmodifiable..."
 	args "--developer-mode", "--debug"
 }
 

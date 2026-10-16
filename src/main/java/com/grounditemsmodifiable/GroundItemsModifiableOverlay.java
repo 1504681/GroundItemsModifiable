@@ -140,6 +140,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private final Set<WorldPoint> hoveredTiles = new HashSet<>();
 	// tiles hovered last and how long they stay expanded after the mouse left them
 	private final Set<WorldPoint> lingerTiles = new HashSet<>();
+	// visible pixel bounds per sprite; weak so evicted item images are not kept alive
+	private final Map<BufferedImage, int[]> iconBounds = new java.util.WeakHashMap<>();
 	private long lingerUntil;
 	// whether Tile.getGroundItems() lists the right-click menu's top item first; learned from the live menu
 	private Boolean pileListTopFirst;
@@ -595,7 +597,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 			if (showIcons)
 			{
 				icon = itemManager.getImage(item.getId(), item.getQuantity(), false);
-				iconWidth = Math.max(1, iconHeight * icon.getWidth() / Math.max(1, icon.getHeight()));
+				// item sprites only use the left 32 px of their 36 px canvas, so the cell is square
+				iconWidth = Math.max(1, iconHeight * Math.min(icon.getWidth(), icon.getHeight()) / Math.max(1, icon.getHeight()));
 				iconSpan = iconWidth + ICON_GAP;
 			}
 
@@ -728,7 +731,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 			if (icon != null)
 			{
 				look.drawIconBacking(graphics, iconX, iconY, iconWidth, iconHeight);
-				graphics.drawImage(icon, iconX, iconY, iconWidth, iconHeight, null);
+				drawIconCentred(graphics, icon, iconX, iconY, iconWidth, iconHeight);
 			}
 			if (shimmer)
 			{
@@ -1374,6 +1377,60 @@ public class GroundItemsModifiableOverlay extends Overlay
 			graphics.setColor(PUBLIC_TIMER_COLOR);
 			graphics.fill(new java.awt.geom.Ellipse2D.Float(at[0] - 1.5f, at[1] - 1.5f, 3f, 3f));
 		}
+	}
+
+	/**
+	 * Draws the sprite so its visible pixels, not its canvas, sit in the middle of the cell. Sprites are drawn
+	 * off-centre in their canvas (left 32 px of 36, and a pixel or two up or down per item).
+	 */
+	private void drawIconCentred(Graphics2D graphics, BufferedImage icon, int x, int y, int width, int height)
+	{
+		final double scale = height / (double) Math.max(1, icon.getHeight());
+		final int drawWidth = (int) Math.round(icon.getWidth() * scale);
+		final int[] b = contentBounds(icon);
+		if (b == null)
+		{
+			graphics.drawImage(icon, x, y, drawWidth, height, null);
+			return;
+		}
+		final double cx = (b[0] + b[2] + 1) / 2.0 * scale;
+		final double cy = (b[1] + b[3] + 1) / 2.0 * scale;
+		graphics.drawImage(icon, (int) Math.round(x + width / 2.0 - cx), (int) Math.round(y + height / 2.0 - cy), drawWidth, height, null);
+	}
+
+	/** Opaque pixel bounds {x0, y0, x1, y1} of a sprite, cached once it has loaded; null while still blank. */
+	private int[] contentBounds(BufferedImage icon)
+	{
+		final int[] cached = iconBounds.get(icon);
+		if (cached != null)
+		{
+			return cached;
+		}
+		int x0 = Integer.MAX_VALUE;
+		int y0 = Integer.MAX_VALUE;
+		int x1 = -1;
+		int y1 = -1;
+		for (int py = 0; py < icon.getHeight(); py++)
+		{
+			for (int px = 0; px < icon.getWidth(); px++)
+			{
+				if ((icon.getRGB(px, py) >>> 24) != 0)
+				{
+					x0 = Math.min(x0, px);
+					y0 = Math.min(y0, py);
+					x1 = Math.max(x1, px);
+					y1 = Math.max(y1, py);
+				}
+			}
+		}
+		if (x1 < 0)
+		{
+			// async image not loaded yet
+			return null;
+		}
+		final int[] bounds = {x0, y0, x1, y1};
+		iconBounds.put(icon, bounds);
+		return bounds;
 	}
 
 	/** 0..1, slow breathing shared by every shimmering box. */

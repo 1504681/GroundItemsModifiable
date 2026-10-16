@@ -86,6 +86,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.11.0: box themes (Classic, OSRS, Minimal, Neon, Pastel, or Custom); piles stay expanded for a configurable delay after the mouse leaves; item sprites centred in their box; pile menu order survives unreadable tiles and fresh drops
 - 1.10.2: piles keep the menu order they showed on hover, so Custom Menu Swaps priorities stick after the mouse leaves
 - 1.10.1: always expanded from tier defaults to High
 - 1.10.0: rows follow the right-click menu order (top row = left-click Take); "Always expanded from tier" keeps valuable items named in icons-only mode

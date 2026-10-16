@@ -136,6 +136,9 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private final Map<WorldPoint, long[]> tileTotals = new LinkedHashMap<>();
 	// compact mode: tiles whose items the game currently offers under the cursor
 	private final Set<WorldPoint> hoveredTiles = new HashSet<>();
+	// tiles hovered last and how long they stay expanded after the mouse left them
+	private final Set<WorldPoint> lingerTiles = new HashSet<>();
+	private long lingerUntil;
 	// whether Tile.getGroundItems() lists the right-click menu's top item first; learned from the live menu
 	private Boolean pileListTopFirst;
 	// last live menu order seen per tile, so a pile keeps the order other plugins (Custom Menu Swaps...) gave it
@@ -377,6 +380,18 @@ public class GroundItemsModifiableOverlay extends Overlay
 						hoveredTiles.add(item.getItemLayer().getWorldLocation());
 					}
 				}
+			}
+			// keep the last hovered tiles open for a moment after the mouse leaves; hovering another tile replaces them
+			final long now = System.currentTimeMillis();
+			if (!hoveredTiles.isEmpty())
+			{
+				lingerTiles.clear();
+				lingerTiles.addAll(hoveredTiles);
+				lingerUntil = now + config.hoverLinger();
+			}
+			else if (now < lingerUntil)
+			{
+				hoveredTiles.addAll(lingerTiles);
 			}
 		}
 

@@ -29,6 +29,7 @@ Ground overlay
 | Show item icons | on | Icon next to the name on the ground |
 | Icon size | 16 px | Icon height |
 | Icons only until hovered | off | Only icons on the ground; a tile expands while the game offers Take on it, or while the hotkey is held |
+| Stay expanded after hover | 1000 ms | A hovered tile stays expanded this long after the mouse leaves, unless another tile is hovered |
 | Always expanded from tier | High | In icons-only mode, items above this tier always show name and price |
 | Stack size next to icon | Number only | Collapsed icons show `1,000` right after the icon; can follow the names format or be off |
 | Icon box from tier | Low | Tier-coloured box around icons of items worth at least this tier; with the ring timer its border is the timer |

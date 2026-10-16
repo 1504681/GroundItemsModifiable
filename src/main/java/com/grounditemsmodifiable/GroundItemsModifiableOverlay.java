@@ -37,6 +37,8 @@ import com.grounditemsmodifiable.config.TileColorMode;
 import com.grounditemsmodifiable.config.TileFillMode;
 import com.grounditemsmodifiable.config.TileShape;
 import com.grounditemsmodifiable.config.TimerVisibility;
+import com.grounditemsmodifiable.config.TextStyle;
+import net.runelite.client.ui.FontManager;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -175,6 +177,14 @@ public class GroundItemsModifiableOverlay extends Overlay
 			return null;
 		}
 
+		final BoxLook look = BoxLook.of(config);
+		if (look.text == TextStyle.BOLD)
+		{
+			// the game's own bold font when the overlay uses the game font, a bold variant otherwise
+			final java.awt.Font font = graphics.getFont();
+			graphics.setFont(font.getFamily().equals(FontManager.getRunescapeFont().getFamily())
+				? FontManager.getRunescapeBoldFont() : font.deriveFont(java.awt.Font.BOLD));
+		}
 		final FontMetrics fm = graphics.getFontMetrics();
 		final Player player = client.getLocalPlayer();
 
@@ -677,6 +687,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 			// value-tier box around the icon
 			RoundRectangle2D box = null;
+			Shape boxShape = null;
 			Color boxColor = null;
 			boolean shimmer = false;
 			if (icon != null && iconBoxTier != HighlightTier.OFF)
@@ -687,7 +698,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 					// a colour picked for this item wins; otherwise the tier's. The name below uses the same colour,
 					// so a highlighted-list colour cannot leave white text inside a green box
 					final Color picked = plugin.getItemColor(item.getId());
-					boxColor = picked != null ? picked : plugin.getPriceTierColor(value);
+					boxColor = look.tint(picked != null ? picked : plugin.getPriceTierColor(value));
 					if (!collapsed && boxWrapsName)
 					{
 						// one rectangle around icon and name
@@ -703,20 +714,25 @@ public class GroundItemsModifiableOverlay extends Overlay
 					}
 					shimmer = shimmerTier != HighlightTier.OFF && value >= shimmerTier.getValueFromTier(config);
 					graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+					boxShape = look.perimeter(box);
 					// shimmering boxes breathe between a faint and a stronger fill
-					final int fillAlpha = shimmer ? (int) (40 + 45 * shimmerPulse()) : 50;
-					graphics.setColor(ColorUtil.colorWithAlpha(boxColor, fillAlpha));
-					graphics.fill(box);
+					final double pulse = shimmerPulse();
+					if (look.glows(value, config))
+					{
+						look.drawGlow(graphics, boxShape, boxColor, pulse);
+					}
+					look.drawFill(graphics, boxShape, boxColor, shimmer, pulse);
 				}
 			}
 
 			if (icon != null)
 			{
+				look.drawIconBacking(graphics, iconX, iconY, iconWidth, iconHeight);
 				graphics.drawImage(icon, iconX, iconY, iconWidth, iconHeight, null);
 			}
 			if (shimmer)
 			{
-				drawShimmer(graphics, box);
+				drawShimmer(graphics, box, boxShape);
 			}
 			// boxed items: name and stack size take the box's colour
 			final Color textColor = boxColor != null ? boxColor : color;
@@ -725,9 +741,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 			final boolean timerShown = timer != null && (plugin.isHotKeyPressed() || timerVisible(timer));
 			if (box != null && !(timerShown && groundItemTimers == DespawnTimerMode.RING))
 			{
-				graphics.setStroke(new BasicStroke(1.5f));
-				graphics.setColor(boxColor);
-				graphics.draw(box);
+				look.drawBorder(graphics, boxShape, box, boxColor);
 			}
 			// whatever sits under the icon starts below the box
 			final int underIconY = box != null ? (int) Math.ceil(box.getMaxY()) + 2
@@ -737,7 +751,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 				if (groundItemTimers == DespawnTimerMode.RING && box != null)
 				{
 					// the box border is the timer
-					drawTimerBox(graphics, box, timer);
+					drawTimerBox(graphics, look.perimeter(box), timer);
 				}
 				else if (groundItemTimers == DespawnTimerMode.RING)
 				{
@@ -1329,9 +1343,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 	/**
 	 * Box border used as the despawn timer: a dark track, then the remaining time drawn clockwise from top centre.
 	 */
-	private void drawTimerBox(Graphics2D graphics, RoundRectangle2D box, TimerInfo timer)
+	private void drawTimerBox(Graphics2D graphics, Path2D path, TimerInfo timer)
 	{
-		final Path2D path = boxPerimeter(box);
 		final float length = pathLength(path);
 		final float width = config.ringWidth();
 		Color color = timer.color;
@@ -1370,7 +1383,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 	}
 
 	/** A soft diagonal band of light that sweeps left to right across the box, then rests. */
-	private static void drawShimmer(Graphics2D graphics, RoundRectangle2D box)
+	private static void drawShimmer(Graphics2D graphics, RoundRectangle2D box, Shape shape)
 	{
 		final double t = (System.currentTimeMillis() % SHIMMER_PERIOD_MS) / (double) SHIMMER_PERIOD_MS;
 		// the sweep takes the first 45% of the period; the rest is a pause
@@ -1391,33 +1404,11 @@ public class GroundItemsModifiableOverlay extends Overlay
 			new Color[]{new Color(255, 255, 255, 0), new Color(255, 255, 255, 110), new Color(255, 255, 255, 0)});
 		final Shape oldClip = graphics.getClip();
 		final java.awt.Paint oldPaint = graphics.getPaint();
-		graphics.clip(box);
+		graphics.clip(shape);
 		graphics.setPaint(paint);
 		graphics.fill(new Rectangle2D.Float(cx - band, (float) box.getY(), band * 2, (float) box.getHeight()));
 		graphics.setPaint(oldPaint);
 		graphics.setClip(oldClip);
-	}
-
-	/** Rounded-box outline starting at top centre and running clockwise. */
-	private static Path2D boxPerimeter(RoundRectangle2D box)
-	{
-		final float x = (float) box.getX();
-		final float y = (float) box.getY();
-		final float w = (float) box.getWidth();
-		final float h = (float) box.getHeight();
-		final float r = (float) box.getArcWidth() / 2f;
-		final Path2D.Float p = new Path2D.Float();
-		p.moveTo(x + w / 2, y);
-		p.lineTo(x + w - r, y);
-		p.quadTo(x + w, y, x + w, y + r);
-		p.lineTo(x + w, y + h - r);
-		p.quadTo(x + w, y + h, x + w - r, y + h);
-		p.lineTo(x + r, y + h);
-		p.quadTo(x, y + h, x, y + h - r);
-		p.lineTo(x, y + r);
-		p.quadTo(x, y, x + r, y);
-		p.lineTo(x + w / 2, y);
-		return p;
 	}
 
 	private static float pathLength(Shape shape)

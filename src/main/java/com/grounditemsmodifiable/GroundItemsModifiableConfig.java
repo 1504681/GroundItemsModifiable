@@ -35,6 +35,15 @@ import net.runelite.client.config.Keybind;
 import net.runelite.client.config.Range;
 import net.runelite.client.config.Units;
 import com.grounditemsmodifiable.config.BarWidth;
+import com.grounditemsmodifiable.config.BoxBorder;
+import com.grounditemsmodifiable.config.BoxCorners;
+import com.grounditemsmodifiable.config.BoxFill;
+import com.grounditemsmodifiable.config.BoxFillColor;
+import com.grounditemsmodifiable.config.BoxStyle;
+import com.grounditemsmodifiable.config.BoxTheme;
+import com.grounditemsmodifiable.config.IconBacking;
+import com.grounditemsmodifiable.config.TextStyle;
+import com.grounditemsmodifiable.config.Palette;
 import com.grounditemsmodifiable.config.CollapsedQuantity;
 import com.grounditemsmodifiable.config.DespawnTimerMode;
 import com.grounditemsmodifiable.config.HighlightTier;
@@ -72,7 +81,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Ground Items Modifiable v" + VERSION,
 		description = "Plugin version and how it works alongside the built-in Ground Items plugin.",
-		position = 10
+		position = 11
 	)
 	String aboutSection = "aboutSection";
 
@@ -373,9 +382,136 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigSection(
+		name = "Box theme",
+		description = "How tier boxes, icons and names look",
+		position = 2
+	)
+	String themeSection = "themeSection";
+
+	@ConfigItem(
+		keyName = "theme",
+		name = "Theme",
+		description = "Look of the tier boxes and labels. Classic is the original look; OSRS, Minimal, Neon and Pastel are presets; Custom uses the settings below.",
+		position = 0,
+		section = themeSection
+	)
+	default BoxTheme theme()
+	{
+		return BoxTheme.CLASSIC;
+	}
+
+	@ConfigItem(
+		keyName = "boxCorners",
+		name = "Corners",
+		description = "Custom theme: corner shape of the tier boxes.",
+		position = 1,
+		section = themeSection
+	)
+	default BoxCorners boxCorners()
+	{
+		return BoxCorners.ROUNDED;
+	}
+
+	@ConfigItem(
+		keyName = "boxStyle",
+		name = "Box style",
+		description = "Custom theme: a full box, or a dark row with a tier-coloured stripe on its left edge.",
+		position = 2,
+		section = themeSection
+	)
+	default BoxStyle boxStyle()
+	{
+		return BoxStyle.BOX;
+	}
+
+	@ConfigItem(
+		keyName = "boxFill",
+		name = "Fill",
+		description = "Custom theme: flat, a top-to-bottom gradient, glass (a light top half), or no fill.",
+		position = 3,
+		section = themeSection
+	)
+	default BoxFill boxFill()
+	{
+		return BoxFill.FLAT;
+	}
+
+	@ConfigItem(
+		keyName = "boxFillColor",
+		name = "Fill colour",
+		description = "Custom theme: fill in the tier colour, dark, or OSRS interface stone.",
+		position = 4,
+		section = themeSection
+	)
+	default BoxFillColor boxFillColor()
+	{
+		return BoxFillColor.TIER;
+	}
+
+	@ConfigItem(
+		keyName = "boxBorder",
+		name = "Border",
+		description = "Custom theme: border line around the tier boxes. With the ring timer the border is the timer.",
+		position = 5,
+		section = themeSection
+	)
+	default BoxBorder boxBorder()
+	{
+		return BoxBorder.SOLID;
+	}
+
+	@ConfigItem(
+		keyName = "glowTier",
+		name = "Glow from tier",
+		description = "Custom theme: boxes of items worth more than this tier get a soft, slowly breathing glow in their colour.",
+		position = 6,
+		section = themeSection
+	)
+	default HighlightTier glowTier()
+	{
+		return HighlightTier.OFF;
+	}
+
+	@ConfigItem(
+		keyName = "iconBacking",
+		name = "Icon backing",
+		description = "Custom theme: a dark slot behind every icon so it stands out on any ground.",
+		position = 7,
+		section = themeSection
+	)
+	default IconBacking iconBacking()
+	{
+		return IconBacking.NONE;
+	}
+
+	@ConfigItem(
+		keyName = "textStyle",
+		name = "Text",
+		description = "Custom theme: the normal or the bold game font for names and stack sizes.",
+		position = 8,
+		section = themeSection
+	)
+	default TextStyle textStyle()
+	{
+		return TextStyle.NORMAL;
+	}
+
+	@ConfigItem(
+		keyName = "palette",
+		name = "Palette",
+		description = "Custom theme: tier colours as set, or softened to pastel for the boxes and their names.",
+		position = 9,
+		section = themeSection
+	)
+	default Palette palette()
+	{
+		return Palette.NORMAL;
+	}
+
+	@ConfigSection(
 		name = "Colours and value tiers",
 		description = "Item colours and the price thresholds behind them.",
-		position = 2
+		position = 3
 	)
 	String colorSection = "colorSection";
 
@@ -533,7 +669,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Tile highlight",
 		description = "How tiles containing ground items are marked.",
-		position = 3
+		position = 4
 	)
 	String tileSection = "tileSection";
 
@@ -691,7 +827,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Despawn timer",
 		description = "Timer style, when it is shown, and the ring/bar pulse.",
-		position = 4
+		position = 5
 	)
 	String timerSection = "timerSection";
 
@@ -801,7 +937,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Renames",
 		description = "Custom item names. Rename an item by holding the hotkey and right-clicking it.",
-		position = 5
+		position = 6
 	)
 	String renameSection = "renameSection";
 
@@ -839,7 +975,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Right-click menu",
 		description = "How ground items appear in the right-click menu.",
-		position = 6,
+		position = 7,
 		closedByDefault = true
 	)
 	String menuSection = "menuSection";
@@ -919,7 +1055,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Lootbeams",
 		description = "Lootbeams for highlighted and valuable items.",
-		position = 7,
+		position = 8,
 		closedByDefault = true
 	)
 	String lootbeamSection = "lootbeamSection";
@@ -963,7 +1099,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Notifications",
 		description = "Desktop notifications for drops.",
-		position = 8,
+		position = 9,
 		closedByDefault = true
 	)
 	String notifySection = "notifySection";
@@ -995,7 +1131,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Hotkey",
 		description = "The key that shows hidden items, the hide/highlight boxes and the rename menu.",
-		position = 9,
+		position = 10,
 		closedByDefault = true
 	)
 	String hotkeySection = "hotkeySection";

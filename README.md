@@ -39,6 +39,13 @@ Ground overlay
 | Total minimum value | 0 | Hide totals below this value |
 | Order like the menu | on | Rows stack in right-click menu order; the top row is what left-click Take picks up |
 
+Box theme
+
+| Setting | Default | What it does |
+|---|---|---|
+| Theme | Classic | Classic (original look), OSRS (stone gradient, notched corners, bold text), Minimal (dark rows, tier stripe), Neon (dark boxes, glowing borders), Pastel (soft colours, pill shape), or Custom |
+| Corners, Box style, Fill, Fill colour, Border, Glow from tier, Icon backing, Text, Palette | Classic look | Individual choices used when Theme is Custom |
+
 Tile highlight
 
 | Setting | Default | What it does |

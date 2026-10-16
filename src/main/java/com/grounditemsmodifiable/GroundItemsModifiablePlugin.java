@@ -727,6 +727,9 @@ public class GroundItemsModifiablePlugin extends Plugin
 			case "importrenames":
 				importRenames();
 				break;
+			case "pileorder":
+				overlay.requestPileDump();
+				break;
 			case "importgrounditems":
 				final int copied = importCoreConfig(true);
 				chatMessage("Copied " + copied + " setting" + (copied == 1 ? "" : "s") + " from the built-in Ground Items plugin.");

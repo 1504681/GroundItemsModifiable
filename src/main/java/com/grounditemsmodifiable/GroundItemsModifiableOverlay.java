@@ -139,7 +139,16 @@ public class GroundItemsModifiableOverlay extends Overlay
 	// whether Tile.getGroundItems() lists the right-click menu's top item first; learned from the live menu
 	private Boolean pileListTopFirst;
 	// last live menu order seen per tile, so a pile keeps the order other plugins (Custom Menu Swaps...) gave it
-	private final Map<Long, Map<Integer, Integer>> menuMemory = new HashMap<>();
+	private final Map<Long, Map<Integer, Integer>> menuMemory = new LinkedHashMap<Long, Map<Integer, Integer>>(16, 0.75f, true)
+	{
+		@Override
+		protected boolean removeEldestEntry(Map.Entry<Long, Map<Integer, Integer>> eldest)
+		{
+			return size() > 256;
+		}
+	};
+	// ::pileorder collects one line per pile here for a frame, then prints them
+	private List<String> pileDump;
 
 	@Inject
 	private GroundItemsModifiableOverlay(Client client, GroundItemsModifiablePlugin plugin, GroundItemsModifiableConfig config, ItemManager itemManager)
@@ -465,6 +474,23 @@ public class GroundItemsModifiableOverlay extends Overlay
 					tileTopDy.put(tile.getKey(), dy + top);
 				}
 			}
+		}
+
+		if (pileDump != null)
+		{
+			if (!menuOrder)
+			{
+				pileDump.add("'Order like the menu' is off");
+			}
+			else if (pileDump.isEmpty())
+			{
+				pileDump.add("no ground item piles in view");
+			}
+			for (String line : pileDump)
+			{
+				client.addChatMessage(net.runelite.api.ChatMessageType.CONSOLE, "", "Pile " + line, null);
+			}
+			pileDump = null;
 		}
 
 		// Pass 3: icons, names, timers and the hotkey boxes
@@ -1425,9 +1451,9 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 	/**
 	 * Item id -> position in the right-click menu (0 = top) for the pile on this item layer's tile. Taken from
-	 * the live menu when the cursor is over the tile, else the last menu seen on it while it still holds the
-	 * same items, otherwise from the tile's item list. That list is compared
-	 * against the live menu whenever both are known, so its direction is learned rather than assumed.
+	 * the live menu when the cursor is over the tile, else from the last menu seen on it (items that landed
+	 * since go below, in pile order), otherwise from the tile's item list. That list is compared against the
+	 * live menu whenever both are known, so its direction is learned rather than assumed.
 	 */
 	private Map<Integer, Integer> pileRanks(ItemLayer layer, Map<Long, Map<Integer, Integer>> menuTiles)
 	{
@@ -1435,34 +1461,72 @@ public class GroundItemsModifiableOverlay extends Overlay
 		final WorldView wv = layer.getWorldView();
 		if (lp == null || wv == null)
 		{
+			debugPile(layer, "no location", null, null);
 			return null;
 		}
-		final Tile[][][] tiles = wv.getScene().getTiles();
-		final int plane = layer.getPlane();
 		final int x = lp.getSceneX();
 		final int y = lp.getSceneY();
+		final long key = sceneKey(wv.getId(), x, y);
+		final Map<Integer, Integer> live = menuTiles.get(key);
+		if (live != null)
+		{
+			menuMemory.put(key, live);
+		}
+
+		final List<Integer> ids = pileIds(wv, layer.getPlane(), x, y);
+		if (live != null)
+		{
+			if (ids != null && live.size() > 1)
+			{
+				learnDirection(ids, live);
+			}
+			debugPile(layer, "live menu", ids, live);
+			return live;
+		}
+
+		final Map<Integer, Integer> remembered = menuMemory.get(key);
+		if (remembered != null)
+		{
+			if (ids == null || remembered.keySet().containsAll(ids))
+			{
+				debugPile(layer, "remembered menu", ids, remembered);
+				return remembered;
+			}
+			// keep the remembered order; items the menu has not shown yet go under it in pile order
+			final Map<Integer, Integer> merged = new HashMap<>(remembered);
+			final Map<Integer, Integer> fromPile = pileOrder(layer, ids);
+			for (int id : ids)
+			{
+				merged.putIfAbsent(id, remembered.size() + fromPile.get(id));
+			}
+			debugPile(layer, "remembered menu + new items", ids, merged);
+			return merged;
+		}
+
+		if (ids == null)
+		{
+			debugPile(layer, "tile not readable", null, null);
+			return null;
+		}
+		final Map<Integer, Integer> ranks = pileOrder(layer, ids);
+		debugPile(layer, "pile order (" + (pileListTopFirst != null ? "learned" : "guessed") + " direction)", ids, ranks);
+		return ranks;
+	}
+
+	/** Distinct item ids on the tile, in the order of Tile.getGroundItems(); null if the tile can't be read. */
+	private List<Integer> pileIds(WorldView wv, int plane, int x, int y)
+	{
+		final Tile[][][] tiles = wv.getScene().getTiles();
 		if (plane < 0 || plane >= tiles.length || x < 0 || x >= tiles[plane].length || y < 0 || y >= tiles[plane][x].length)
 		{
 			return null;
 		}
 		final Tile tile = tiles[plane][x][y];
 		final List<TileItem> pile = tile != null ? tile.getGroundItems() : null;
-
-		final long key = sceneKey(wv.getId(), x, y);
-		final Map<Integer, Integer> live = menuTiles.get(key);
-		if (live != null)
-		{
-			if (menuMemory.size() > 512)
-			{
-				menuMemory.clear();
-			}
-			menuMemory.put(key, live);
-		}
 		if (pile == null || pile.isEmpty())
 		{
-			return live;
+			return null;
 		}
-
 		final List<Integer> ids = new ArrayList<>();
 		for (TileItem ti : pile)
 		{
@@ -1471,52 +1535,93 @@ public class GroundItemsModifiableOverlay extends Overlay
 				ids.add(ti.getId());
 			}
 		}
-		if (live != null && live.size() > 1)
-		{
-			// learn which end of the list the menu starts at, but only from a menu in the game's own order:
-			// one reordered by another plugin is neither the list nor the list reversed
-			boolean up = true;
-			boolean down = true;
-			int prev = -1;
-			int seen = 0;
-			for (int id : ids)
-			{
-				final Integer rank = live.get(id);
-				if (rank == null)
-				{
-					continue;
-				}
-				if (seen++ > 0)
-				{
-					up &= rank > prev;
-					down &= rank < prev;
-				}
-				prev = rank;
-			}
-			if (seen > 1 && up != down)
-			{
-				pileListTopFirst = up;
-			}
-			return live;
-		}
-		if (live != null)
-		{
-			return live;
-		}
-		final Map<Integer, Integer> remembered = menuMemory.get(key);
-		if (remembered != null && remembered.keySet().containsAll(ids))
-		{
-			return remembered;
-		}
+		return ids;
+	}
 
+	/**
+	 * Learn which end of the pile list the menu starts at, but only from a menu in the game's own order: one
+	 * reordered by another plugin (Custom Menu Swaps...) is neither the list nor the list reversed.
+	 */
+	private void learnDirection(List<Integer> ids, Map<Integer, Integer> live)
+	{
+		boolean up = true;
+		boolean down = true;
+		int prev = -1;
+		int seen = 0;
+		for (int id : ids)
+		{
+			final Integer rank = live.get(id);
+			if (rank == null)
+			{
+				continue;
+			}
+			if (seen++ > 0)
+			{
+				up &= rank > prev;
+				down &= rank < prev;
+			}
+			prev = rank;
+		}
+		if (seen > 1 && up != down)
+		{
+			pileListTopFirst = up;
+		}
+	}
+
+	private Map<Integer, Integer> pileOrder(ItemLayer layer, List<Integer> ids)
+	{
 		// until the menu has been seen over a pile, assume the end holding the item drawn on top is the menu's top
-		final boolean topFirst = pileListTopFirst != null ? pileListTopFirst : pile.get(0) == layer.getTop() || pile.get(pile.size() - 1) != layer.getTop();
+		boolean topFirst = true;
+		if (pileListTopFirst != null)
+		{
+			topFirst = pileListTopFirst;
+		}
+		else if (layer.getTop() instanceof TileItem)
+		{
+			topFirst = ((TileItem) layer.getTop()).getId() == ids.get(0) || ((TileItem) layer.getTop()).getId() != ids.get(ids.size() - 1);
+		}
 		final Map<Integer, Integer> ranks = new HashMap<>();
 		for (int i = 0; i < ids.size(); i++)
 		{
 			ranks.put(ids.get(topFirst ? i : ids.size() - 1 - i), i);
 		}
 		return ranks;
+	}
+
+	/** ::pileorder: on the next frame, print where every visible pile's order comes from. */
+	void requestPileDump()
+	{
+		pileDump = new ArrayList<>();
+	}
+
+	private void debugPile(ItemLayer layer, String source, List<Integer> ids, Map<Integer, Integer> ranks)
+	{
+		if (pileDump == null)
+		{
+			return;
+		}
+		final StringBuilder sb = new StringBuilder();
+		final WorldPoint wp = layer.getWorldLocation();
+		sb.append(wp.getX()).append(',').append(wp.getY()).append(": ").append(source);
+		if (ranks != null)
+		{
+			final List<Map.Entry<Integer, Integer>> sorted = new ArrayList<>(ranks.entrySet());
+			sorted.sort(Map.Entry.comparingByValue());
+			sb.append(" | top first:");
+			for (Map.Entry<Integer, Integer> e : sorted)
+			{
+				sb.append(' ').append(itemManager.getItemComposition(e.getKey()).getName());
+			}
+		}
+		if (ids != null)
+		{
+			sb.append(" | tile list:");
+			for (int id : ids)
+			{
+				sb.append(' ').append(itemManager.getItemComposition(id).getName());
+			}
+		}
+		pileDump.add(sb.toString());
 	}
 
 	private boolean hasTierBox(GroundItem item, HighlightTier tier)

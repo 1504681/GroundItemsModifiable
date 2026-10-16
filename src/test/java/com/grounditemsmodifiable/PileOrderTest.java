@@ -89,11 +89,26 @@ public class PileOrderTest
 		ranks(overlay, layer, menu);
 		assertEquals(swapped, ranks(overlay, layer, none));
 
-		// once the pile holds an item the remembered menu never saw, fall back to the pile
+		// an item the remembered menu never saw goes under the remembered order
 		final List<TileItem> grown = Arrays.asList(item(1), item(2), item(3), item(4));
 		when(tile.getGroundItems()).thenReturn(grown);
 		r = ranks(overlay, layer, none);
-		assertEquals(Integer.valueOf(0), r.get(1));
-		assertEquals(Integer.valueOf(3), r.get(4));
+		assertEquals(Integer.valueOf(0), r.get(2));
+		assertEquals(Integer.valueOf(1), r.get(3));
+		assertEquals(Integer.valueOf(2), r.get(1));
+		assertEquals(true, r.get(4) > 2);
+
+		// hovering another pile does not touch this one's memory
+		final Map<Long, Map<Integer, Integer>> other = new HashMap<>();
+		final Map<Integer, Integer> elsewhere = new HashMap<>();
+		elsewhere.put(1, 0);
+		elsewhere.put(4, 1);
+		other.put((-1L << 32) | (11L << 16) | 20L, elsewhere);
+		r = ranks(overlay, layer, other);
+		assertEquals(Integer.valueOf(0), r.get(2));
+
+		// the tile can't be read: the remembered order still applies
+		when(scene.getTiles()).thenReturn(new Tile[4][104][104]);
+		assertEquals(swapped, ranks(overlay, layer, none));
 	}
 }

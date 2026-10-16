@@ -28,6 +28,8 @@ Ground overlay
 | Stack size format | x 3 | `Prayer potion(4) x 3`, `Prayer potion(4) (3)`, or hidden |
 | Show item icons | on | Icon next to the name on the ground |
 | Icon size | 16 px | Icon height |
+| Icon scale | 100 % | 30–300 %: size of collapsed icons (icons-only mode) with their box, timer and stack number |
+| Expanded scale | 100 % | 30–300 %: size of rows showing names, and of the tile total |
 | Icons only until hovered | off | Only icons on the ground; a tile expands while the game offers Take on it, or while the hotkey is held |
 | Stay expanded after hover | 1000 ms | A hovered tile stays expanded this long after the mouse leaves, unless another tile is hovered |
 | Always expanded from tier | High | In icons-only mode, items above this tier always show name and price |
@@ -86,6 +88,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.12.0: icon scale and expanded scale, 30–300 %
 - 1.11.0: box themes (Classic, OSRS, Minimal, Neon, Pastel, or Custom); piles stay expanded for a configurable delay after the mouse leaves; item sprites centred in their box; pile menu order survives unreadable tiles and fresh drops
 - 1.10.2: piles keep the menu order they showed on hover, so Custom Menu Swaps priorities stick after the mouse leaves
 - 1.10.1: always expanded from tier defaults to High

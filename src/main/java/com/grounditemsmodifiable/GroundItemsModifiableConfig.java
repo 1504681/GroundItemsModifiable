@@ -63,7 +63,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.11.0";
+	String VERSION = "1.12.0";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
@@ -259,11 +259,39 @@ public interface GroundItemsModifiableConfig extends Config
 		return 16;
 	}
 
+	@Range(min = 30, max = 300)
+	@Units(Units.PERCENT)
+	@ConfigItem(
+		keyName = "iconScale",
+		name = "Icon scale",
+		description = "Size of collapsed icons in icons-only mode, with their box, timer and stack number. 100 is normal.",
+		position = 6,
+		section = overlaySection
+	)
+	default int iconScale()
+	{
+		return 100;
+	}
+
+	@Range(min = 30, max = 300)
+	@Units(Units.PERCENT)
+	@ConfigItem(
+		keyName = "expandedScale",
+		name = "Expanded scale",
+		description = "Size of rows showing names (icon, name, price, box, timer) and the tile total. 100 is normal.",
+		position = 7,
+		section = overlaySection
+	)
+	default int expandedScale()
+	{
+		return 100;
+	}
+
 	@ConfigItem(
 		keyName = "compactMode",
 		name = "Icons only until hovered",
 		description = "Draw only the icon on the ground. A tile shows names, prices and totals while the mouse is over one of its items (the game offers Take), or while the hotkey is held. Needs item icons on.",
-		position = 6,
+		position = 8,
 		section = overlaySection
 	)
 	default boolean compactMode()
@@ -277,7 +305,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "hoverLinger",
 		name = "Stay expanded after hover",
 		description = "In icons-only mode, a hovered tile stays expanded this long after the mouse leaves it, unless another tile is hovered first.",
-		position = 7,
+		position = 9,
 		section = overlaySection
 	)
 	default int hoverLinger()
@@ -289,7 +317,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "expandTier",
 		name = "Always expanded from tier",
 		description = "In icons-only mode, items worth more than this value tier always show their name and price, even when the tile is not hovered.",
-		position = 8,
+		position = 10,
 		section = overlaySection
 	)
 	default HighlightTier expandTier()
@@ -301,7 +329,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "collapsedQuantity",
 		name = "Stack size next to icon",
 		description = "In icons-only mode, the stack size drawn right after a collapsed icon: just the number, the same format as names ('Stack size format'), or nothing.",
-		position = 9,
+		position = 11,
 		section = overlaySection
 	)
 	default CollapsedQuantity collapsedQuantity()
@@ -313,7 +341,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "iconBoxTier",
 		name = "Icon box from tier",
 		description = "Draw a box in the value-tier colour around the icons of items worth at least this tier. With the ring timer the box's border becomes the timer; the bar sits under the box.",
-		position = 10,
+		position = 12,
 		section = overlaySection
 	)
 	default HighlightTier iconBoxTier()
@@ -325,7 +353,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "iconBoxWrapsName",
 		name = "Box wraps name",
 		description = "When a tile shows names (always, or while hovered in icons-only mode), the tier box grows to wrap the icon and the name together.",
-		position = 11,
+		position = 13,
 		section = overlaySection
 	)
 	default boolean iconBoxWrapsName()
@@ -337,7 +365,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "shimmerTier",
 		name = "Shimmer from tier",
 		description = "Tier boxes of items at or above this value tier pulse softly and have a light sweep across them. Needs 'Icon box from tier'.",
-		position = 12,
+		position = 14,
 		section = overlaySection
 	)
 	default HighlightTier shimmerTier()
@@ -349,7 +377,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "showTileTotal",
 		name = "Tile value total",
 		description = "When two or more items share a tile, draw a total value line above them, coloured by value tier.",
-		position = 13,
+		position = 15,
 		section = overlaySection
 	)
 	default boolean showTileTotal()
@@ -361,7 +389,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileTotalMinimum",
 		name = "Total minimum value",
 		description = "Only show the tile total when it is at least this much.",
-		position = 14,
+		position = 16,
 		section = overlaySection
 	)
 	default int tileTotalMinimum()
@@ -373,7 +401,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "menuOrder",
 		name = "Order like the menu",
 		description = "Stack a tile's items in the order the right-click menu lists them: the top row is the item left-click Take picks up.",
-		position = 15,
+		position = 17,
 		section = overlaySection
 	)
 	default boolean menuOrder()

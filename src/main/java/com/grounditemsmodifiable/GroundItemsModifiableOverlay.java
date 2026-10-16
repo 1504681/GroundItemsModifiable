@@ -54,6 +54,7 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.Stroke;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
@@ -355,6 +356,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 		final HighlightTier expandTier = config.expandTier();
 		final boolean menuOrder = config.menuOrder();
 		final BarWidth barWidth = config.barWidth();
+		final double iconScale = config.iconScale() / 100.0;
+		final double expandedScale = config.expandedScale() / 100.0;
 		hoveredTiles.clear();
 		// Ground item entries under the cursor, per tile: item id -> position in the menu (0 = top, the
 		// left-click option). Entries are stored bottom first, so walk them backwards.
@@ -455,6 +458,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 					final TimerInfo t = groundItemTimers == DespawnTimerMode.BAR ? timerInfo(item) : null;
 					final boolean hasBar = t != null && (plugin.isHotKeyPressed() || timerVisible(t));
 					final boolean hasText = !tileCollapsed || hasTierBox(item, expandTier) || (item.getQuantity() > 1 && collapsedQuantity != CollapsedQuantity.OFF);
+					final double scale = tileCollapsed && !hasTierBox(item, expandTier) ? iconScale : expandedScale;
 					int top;
 					int bottom;
 					int iconBottom = 0;
@@ -485,12 +489,15 @@ public class GroundItemsModifiableOverlay extends Overlay
 						final int under = hasBox ? bottom + 2 : showIcons ? Math.max(2, iconBottom + 2) : 2;
 						bottom = Math.max(bottom, under + config.ringWidth());
 					}
+					// the row is drawn scaled around its baseline
+					top = (int) Math.floor(top * scale);
+					bottom = (int) Math.ceil(bottom * scale);
 					if (!first)
 					{
 						int step = -prevTop + ROW_GAP + bottom;
 						if (!showIcons)
 						{
-							step = Math.max(step, STRING_GAP);
+							step = Math.max(step, (int) Math.round(STRING_GAP * scale));
 						}
 						dy -= step;
 					}
@@ -521,8 +528,10 @@ public class GroundItemsModifiableOverlay extends Overlay
 		}
 
 		// Pass 3: icons, names, timers and the hotkey boxes
+		final AffineTransform baseTransform = graphics.getTransform();
 		for (GroundItem item : visibleItems)
 		{
+			graphics.setTransform(baseTransform);
 			final LocalPoint groundPoint = groundPoint(item);
 			if (groundPoint == null)
 			{
@@ -632,6 +641,18 @@ public class GroundItemsModifiableOverlay extends Overlay
 			final int iconX = collapsed ? textPoint.getX() + textWidth / 2 - iconWidth / 2 : textX - iconSpan;
 			final int iconY = textY - (fm.getAscent() + iconHeight) / 2;
 
+			// scale the whole row around the tile centre on its baseline
+			final double scale = collapsed ? iconScale : expandedScale;
+			final AffineTransform rowTransform = new AffineTransform();
+			if (scale != 1)
+			{
+				final double anchorX = textPoint.getX() + textWidth / 2.0;
+				rowTransform.translate(anchorX, textY);
+				rowTransform.scale(scale, scale);
+				rowTransform.translate(-anchorX, -textY);
+				graphics.transform(rowTransform);
+			}
+
 			if (plugin.isHotKeyPressed())
 			{
 				final int stringWidth = fm.stringWidth(itemString);
@@ -654,22 +675,26 @@ public class GroundItemsModifiableOverlay extends Overlay
 				x += width + 2;
 				final Rectangle itemHighlightBox = new Rectangle(x, y, width, height);
 
-				boolean mouseInBox = itemBounds.contains(mousePos.getX(), mousePos.getY());
-				boolean mouseInHiddenBox = itemHiddenBox.contains(mousePos.getX(), mousePos.getY());
-				boolean mouseInHighlightBox = itemHighlightBox.contains(mousePos.getX(), mousePos.getY());
+				// boxes are drawn in the row's scaled space; hit tests and the click bounds use the screen
+				final Rectangle screenBounds = rowTransform.createTransformedShape(itemBounds).getBounds();
+				final Rectangle screenHiddenBox = rowTransform.createTransformedShape(itemHiddenBox).getBounds();
+				final Rectangle screenHighlightBox = rowTransform.createTransformedShape(itemHighlightBox).getBounds();
+				boolean mouseInBox = screenBounds.contains(mousePos.getX(), mousePos.getY());
+				boolean mouseInHiddenBox = screenHiddenBox.contains(mousePos.getX(), mousePos.getY());
+				boolean mouseInHighlightBox = screenHighlightBox.contains(mousePos.getX(), mousePos.getY());
 
 				if (mouseInBox)
 				{
-					plugin.setTextBoxBounds(new SimpleEntry<>(itemBounds, item));
+					plugin.setTextBoxBounds(new SimpleEntry<>(screenBounds, item));
 				}
 				else if (mouseInHiddenBox)
 				{
-					plugin.setHiddenBoxBounds(new SimpleEntry<>(itemHiddenBox, item));
+					plugin.setHiddenBoxBounds(new SimpleEntry<>(screenHiddenBox, item));
 
 				}
 				else if (mouseInHighlightBox)
 				{
-					plugin.setHighlightBoxBounds(new SimpleEntry<>(itemHighlightBox, item));
+					plugin.setHighlightBoxBounds(new SimpleEntry<>(screenHighlightBox, item));
 				}
 
 				boolean topItem = topGroundItem == item;
@@ -831,10 +856,12 @@ public class GroundItemsModifiableOverlay extends Overlay
 			textComponent.setPosition(new java.awt.Point(textX, textY));
 			textComponent.render(graphics);
 		}
+		graphics.setTransform(baseTransform);
 
 		if (showTileTotal)
 		{
-			renderTileTotals(graphics, outline, compact && !plugin.isHotKeyPressed());
+			renderTileTotals(graphics, outline, compact && !plugin.isHotKeyPressed(), expandedScale);
+			graphics.setTransform(baseTransform);
 		}
 
 		return null;
@@ -843,9 +870,11 @@ public class GroundItemsModifiableOverlay extends Overlay
 	/**
 	 * One extra line above the stack of a tile holding two or more items: the summed value, coloured by tier.
 	 */
-	private void renderTileTotals(Graphics2D graphics, boolean outline, boolean hoveredOnly)
+	private void renderTileTotals(Graphics2D graphics, boolean outline, boolean hoveredOnly, double scale)
 	{
 		final long minimum = config.tileTotalMinimum();
+		final AffineTransform baseTransform = graphics.getTransform();
+		final FontMetrics fm = graphics.getFontMetrics();
 
 		for (Map.Entry<WorldPoint, long[]> entry : tileTotals.entrySet())
 		{
@@ -896,10 +925,20 @@ public class GroundItemsModifiableOverlay extends Overlay
 				continue;
 			}
 
+			final int y = textPoint.getY() + tileTopDy.getOrDefault(entry.getKey(), 0) - ROW_GAP - (int) Math.ceil(fm.getDescent() * scale);
+			graphics.setTransform(baseTransform);
+			if (scale != 1)
+			{
+				// scaled around its own centre and baseline, like the rows under it
+				final double anchorX = textPoint.getX() + fm.stringWidth(text) / 2.0;
+				graphics.translate(anchorX, y);
+				graphics.scale(scale, scale);
+				graphics.translate(-anchorX, -y);
+			}
 			textComponent.setText(text);
 			textComponent.setColor(plugin.getPriceTierColor(value));
 			textComponent.setOutline(outline);
-			textComponent.setPosition(new java.awt.Point(textPoint.getX(), textPoint.getY() + tileTopDy.getOrDefault(entry.getKey(), 0) - ROW_GAP - graphics.getFontMetrics().getDescent()));
+			textComponent.setPosition(new java.awt.Point(textPoint.getX(), y));
 			textComponent.render(graphics);
 		}
 	}

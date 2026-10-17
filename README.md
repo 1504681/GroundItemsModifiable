@@ -46,7 +46,12 @@ Box theme
 | Setting | Default | What it does |
 |---|---|---|
 | Theme | Classic | Classic (original look), OSRS (stone gradient, notched corners, bold text), Minimal (dark rows, tier stripe), Neon (dark boxes, glowing borders), Pastel (soft colours, pill shape), or Custom |
-| Corners, Box style, Fill, Fill colour, Border, Glow from tier, Icon backing, Text, Palette | Classic look | Individual choices used when Theme is Custom |
+
+Custom theme (collapsed; only used when Theme is Custom)
+
+| Setting | Default | What it does |
+|---|---|---|
+| Corners, Box style, Fill, Fill colour, Border, Glow from tier, Icon backing, Text, Palette | Classic look | Individual choices for the Custom theme |
 
 Tile highlight
 
@@ -88,6 +93,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.12.1: Custom theme options moved to their own collapsed section
 - 1.12.0: icon scale and expanded scale, 30–300 %
 - 1.11.0: box themes (Classic, OSRS, Minimal, Neon, Pastel, or Custom); piles stay expanded for a configurable delay after the mouse leaves; item sprites centred in their box; pile menu order survives unreadable tiles and fresh drops
 - 1.10.2: piles keep the menu order they showed on hover, so Custom Menu Swaps priorities stick after the mouse leaves

@@ -63,7 +63,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.12.0";
+	String VERSION = "1.12.1";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
@@ -81,7 +81,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Ground Items Modifiable v" + VERSION,
 		description = "Plugin version and how it works alongside the built-in Ground Items plugin.",
-		position = 11
+		position = 12
 	)
 	String aboutSection = "aboutSection";
 
@@ -416,10 +416,18 @@ public interface GroundItemsModifiableConfig extends Config
 	)
 	String themeSection = "themeSection";
 
+	@ConfigSection(
+		name = "Custom theme",
+		description = "Only used when Box theme is set to Custom.",
+		position = 3,
+		closedByDefault = true
+	)
+	String customThemeSection = "customThemeSection";
+
 	@ConfigItem(
 		keyName = "theme",
 		name = "Theme",
-		description = "Look of the tier boxes and labels. Classic is the original look; OSRS, Minimal, Neon and Pastel are presets; Custom uses the settings below.",
+		description = "Look of the tier boxes (items worth at least 'Icon box from tier') and labels. Classic is the original look; OSRS, Minimal, Neon and Pastel are presets; Custom uses the Custom theme section.",
 		position = 0,
 		section = themeSection
 	)
@@ -431,9 +439,9 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "boxCorners",
 		name = "Corners",
-		description = "Custom theme: corner shape of the tier boxes.",
+		description = "corner shape of the tier boxes.",
 		position = 1,
-		section = themeSection
+		section = customThemeSection
 	)
 	default BoxCorners boxCorners()
 	{
@@ -443,9 +451,9 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "boxStyle",
 		name = "Box style",
-		description = "Custom theme: a full box, or a dark row with a tier-coloured stripe on its left edge.",
+		description = "a full box, or a dark row with a tier-coloured stripe on its left edge.",
 		position = 2,
-		section = themeSection
+		section = customThemeSection
 	)
 	default BoxStyle boxStyle()
 	{
@@ -455,9 +463,9 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "boxFill",
 		name = "Fill",
-		description = "Custom theme: flat, a top-to-bottom gradient, glass (a light top half), or no fill.",
+		description = "flat, a top-to-bottom gradient, glass (a light top half), or no fill.",
 		position = 3,
-		section = themeSection
+		section = customThemeSection
 	)
 	default BoxFill boxFill()
 	{
@@ -467,9 +475,9 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "boxFillColor",
 		name = "Fill colour",
-		description = "Custom theme: fill in the tier colour, dark, or OSRS interface stone.",
+		description = "fill in the tier colour, dark, or OSRS interface stone.",
 		position = 4,
-		section = themeSection
+		section = customThemeSection
 	)
 	default BoxFillColor boxFillColor()
 	{
@@ -479,9 +487,9 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "boxBorder",
 		name = "Border",
-		description = "Custom theme: border line around the tier boxes. With the ring timer the border is the timer.",
+		description = "border line around the tier boxes. With the ring timer the border is the timer.",
 		position = 5,
-		section = themeSection
+		section = customThemeSection
 	)
 	default BoxBorder boxBorder()
 	{
@@ -491,9 +499,9 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "glowTier",
 		name = "Glow from tier",
-		description = "Custom theme: boxes of items worth more than this tier get a soft, slowly breathing glow in their colour.",
+		description = "boxes of items worth more than this tier get a soft, slowly breathing glow in their colour.",
 		position = 6,
-		section = themeSection
+		section = customThemeSection
 	)
 	default HighlightTier glowTier()
 	{
@@ -503,9 +511,9 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "iconBacking",
 		name = "Icon backing",
-		description = "Custom theme: a dark slot behind every icon so it stands out on any ground.",
+		description = "a dark slot behind every icon so it stands out on any ground.",
 		position = 7,
-		section = themeSection
+		section = customThemeSection
 	)
 	default IconBacking iconBacking()
 	{
@@ -515,9 +523,9 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "textStyle",
 		name = "Text",
-		description = "Custom theme: the normal or the bold game font for names and stack sizes.",
+		description = "the normal or the bold game font for names and stack sizes.",
 		position = 8,
-		section = themeSection
+		section = customThemeSection
 	)
 	default TextStyle textStyle()
 	{
@@ -527,9 +535,9 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigItem(
 		keyName = "palette",
 		name = "Palette",
-		description = "Custom theme: tier colours as set, or softened to pastel for the boxes and their names.",
+		description = "tier colours as set, or softened to pastel for the boxes and their names.",
 		position = 9,
-		section = themeSection
+		section = customThemeSection
 	)
 	default Palette palette()
 	{
@@ -539,7 +547,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Colours and value tiers",
 		description = "Item colours and the price thresholds behind them.",
-		position = 3
+		position = 4
 	)
 	String colorSection = "colorSection";
 
@@ -697,7 +705,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Tile highlight",
 		description = "How tiles containing ground items are marked.",
-		position = 4
+		position = 5
 	)
 	String tileSection = "tileSection";
 
@@ -855,7 +863,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Despawn timer",
 		description = "Timer style, when it is shown, and the ring/bar pulse.",
-		position = 5
+		position = 6
 	)
 	String timerSection = "timerSection";
 
@@ -965,7 +973,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Renames",
 		description = "Custom item names. Rename an item by holding the hotkey and right-clicking it.",
-		position = 6
+		position = 7
 	)
 	String renameSection = "renameSection";
 
@@ -1003,7 +1011,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Right-click menu",
 		description = "How ground items appear in the right-click menu.",
-		position = 7,
+		position = 8,
 		closedByDefault = true
 	)
 	String menuSection = "menuSection";
@@ -1083,7 +1091,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Lootbeams",
 		description = "Lootbeams for highlighted and valuable items.",
-		position = 8,
+		position = 9,
 		closedByDefault = true
 	)
 	String lootbeamSection = "lootbeamSection";
@@ -1127,7 +1135,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Notifications",
 		description = "Desktop notifications for drops.",
-		position = 9,
+		position = 10,
 		closedByDefault = true
 	)
 	String notifySection = "notifySection";
@@ -1159,7 +1167,7 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Hotkey",
 		description = "The key that shows hidden items, the hide/highlight boxes and the rename menu.",
-		position = 10,
+		position = 11,
 		closedByDefault = true
 	)
 	String hotkeySection = "hotkeySection";

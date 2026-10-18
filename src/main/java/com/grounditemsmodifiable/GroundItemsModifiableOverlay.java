@@ -136,6 +136,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private final Map<WorldPoint, Integer> offsetMap = new HashMap<>();
 	private final List<GroundItem> visibleItems = new ArrayList<>();
 	private final Map<WorldPoint, GroundItem> tileItems = new LinkedHashMap<>();
+	private final List<Shape> marks = new ArrayList<>();
+	private final List<GroundItem> markItems = new ArrayList<>();
 	private final Map<WorldPoint, long[]> tileTotals = new LinkedHashMap<>();
 	// compact mode: tiles whose items the game currently offers under the cursor
 	private final Set<WorldPoint> hoveredTiles = new HashSet<>();
@@ -309,32 +311,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 		// Pass 2: tiles go under everything else, one polygon per tile
 		if (config.highlightTiles())
 		{
-			if (config.tilesUnderActors())
-			{
-				// no overlay layer sits between the ground and actors, so cut every NPC and player's outline
-				// out of the drawing area instead: the tile then looks like it is under them
-				final Shape oldClip = graphics.getClip();
-				final Area clip = new Area(oldClip != null ? oldClip : new Rectangle(0, 0, client.getCanvasWidth(), client.getCanvasHeight()));
-				final WorldView wv = client.getTopLevelWorldView();
-				if (wv != null)
-				{
-					for (NPC npc : wv.npcs())
-					{
-						subtractHull(clip, npc);
-					}
-					for (Player p : wv.players())
-					{
-						subtractHull(clip, p);
-					}
-				}
-				graphics.setClip(clip);
-				renderTiles(graphics);
-				graphics.setClip(oldClip);
-			}
-			else
-			{
-				renderTiles(graphics);
-			}
+			renderTiles(graphics, config.tilesUnderActors());
 		}
 
 		if (dontShowOverlay)
@@ -1004,7 +981,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 	/**
 	 * Draw one polygon per tile. When several items share a tile the highlighted one decides the colour.
 	 */
-	private void renderTiles(Graphics2D graphics)
+	private void renderTiles(Graphics2D graphics, boolean underActors)
 	{
 		tileItems.clear();
 		final boolean highlightedOnly = config.tileHighlightedOnly();
@@ -1048,6 +1025,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 			graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		}
 
+		marks.clear();
+		markItems.clear();
 		for (GroundItem item : tileItems.values())
 		{
 			final LocalPoint groundPoint = groundPoint(item);
@@ -1064,10 +1043,26 @@ public class GroundItemsModifiableOverlay extends Overlay
 			}
 
 			final Shape mark = shape == TileShape.CIRCLE ? tileCircle(groundPoint, item.getItemLayer().getPlane(), height, circleScale) : poly;
-			if (mark == null)
+			if (mark != null)
 			{
-				continue;
+				marks.add(mark);
+				markItems.add(item);
 			}
+		}
+
+		// no overlay layer sits between the ground and actors, so cut the outlines of actors standing over a
+		// tile out of the drawing area: the tile then looks like it is under them
+		final Shape oldClip = graphics.getClip();
+		final Area clip = underActors ? actorCutout(marks, outlineWidth) : null;
+		if (clip != null)
+		{
+			graphics.clip(clip);
+		}
+
+		for (int i = 0; i < marks.size(); i++)
+		{
+			final Shape mark = marks.get(i);
+			final GroundItem item = markItems.get(i);
 
 			Color fill = null;
 			switch (fillMode)
@@ -1096,6 +1091,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 			}
 		}
 
+		graphics.setClip(oldClip);
 		graphics.setStroke(originalStroke);
 		if (originalAa != null)
 		{
@@ -1373,13 +1369,90 @@ public class GroundItemsModifiableOverlay extends Overlay
 		}
 
 	}
-	private static void subtractHull(Area clip, Actor actor)
+	/**
+	 * The tiles' screen area minus the outlines of NPCs and players overlapping a tile, or null when none does.
+	 * Convex hulls are expensive with many actors in view, so an actor first has to pass a cheap screen box test
+	 * (its footprint up to its head) before its hull is computed.
+	 */
+	private Area actorCutout(List<Shape> marks, int outlineWidth)
 	{
-		final Shape hull = actor.getConvexHull();
-		if (hull != null)
+		final WorldView wv = client.getTopLevelWorldView();
+		if (wv == null || marks.isEmpty())
 		{
-			clip.subtract(new Area(hull));
+			return null;
 		}
+		final int grow = outlineWidth + 2;
+		final List<Rectangle> tileBounds = new ArrayList<>(marks.size());
+		Rectangle all = null;
+		for (Shape mark : marks)
+		{
+			final Rectangle b = mark.getBounds();
+			b.grow(grow, grow);
+			tileBounds.add(b);
+			all = all == null ? new Rectangle(b) : all.union(b);
+		}
+		Area clip = null;
+		for (NPC npc : wv.npcs())
+		{
+			clip = cutActor(clip, all, tileBounds, npc, wv.getPlane());
+		}
+		for (Player p : wv.players())
+		{
+			clip = cutActor(clip, all, tileBounds, p, wv.getPlane());
+		}
+		return clip;
+	}
+
+	private Area cutActor(Area clip, Rectangle all, List<Rectangle> tileBounds, Actor actor, int plane)
+	{
+		final Rectangle box = actorScreenBox(actor, plane);
+		if (box == null || !box.intersects(all) || !intersectsAny(box, tileBounds))
+		{
+			return clip;
+		}
+		final Shape hull = actor.getConvexHull();
+		if (hull == null || !intersectsAny(hull.getBounds(), tileBounds))
+		{
+			return clip;
+		}
+		if (clip == null)
+		{
+			clip = new Area(all);
+		}
+		clip.subtract(new Area(hull));
+		return clip;
+	}
+
+	/** A generous screen box around an actor: its footprint up to above its head, widened by half the footprint. */
+	private Rectangle actorScreenBox(Actor actor, int plane)
+	{
+		final LocalPoint lp = actor.getLocalLocation();
+		final Polygon foot = actor.getCanvasTilePoly();
+		if (lp == null || foot == null)
+		{
+			return null;
+		}
+		final Rectangle box = foot.getBounds();
+		final Point head = Perspective.localToCanvas(client, lp, plane, actor.getLogicalHeight() + 64);
+		if (head != null)
+		{
+			box.add(head.getX(), head.getY());
+		}
+		final int pad = Math.max(16, box.width / 2);
+		box.grow(pad, pad);
+		return box;
+	}
+
+	private static boolean intersectsAny(Rectangle r, List<Rectangle> rects)
+	{
+		for (Rectangle b : rects)
+		{
+			if (r.intersects(b))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

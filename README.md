@@ -93,6 +93,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.12.2: fix lag with many players around while tiles are highlighted: only actors standing over a highlighted tile are cut out of it
 - 1.12.1: Custom theme options moved to their own collapsed section
 - 1.12.0: icon scale and expanded scale, 30–300 %
 - 1.11.0: box themes (Classic, OSRS, Minimal, Neon, Pastel, or Custom); piles stay expanded for a configurable delay after the mouse leaves; item sprites centred in their box; pile menu order survives unreadable tiles and fresh drops

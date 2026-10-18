@@ -5,3 +5,4 @@
 - Hold the hotkey at Expanded scale 200 %: clicking the hide/highlight boxes and the name toggles the right item.
 - Both scales at 100 %: looks identical to 1.11.0.
 - Busy world (GE) with Highlight tiles on: no lag; a player walking over a highlighted tile still covers it.
+- Fresh rare drop (PvP kill, uncharged/degraded items): row shows the name right away, the icon pops in a moment later, no empty icon slot.

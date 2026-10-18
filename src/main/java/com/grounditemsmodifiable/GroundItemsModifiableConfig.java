@@ -63,7 +63,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.12.2";
+	String VERSION = "1.12.3";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(

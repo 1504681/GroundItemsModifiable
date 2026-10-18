@@ -408,6 +408,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 		{
 			collectedGroundItems.put(tile.getWorldLocation(), item.getId(), groundItem);
 		}
+		preloadIcon(existing != null ? existing : groundItem);
 
 		if (shouldDisplayItem(config.ownershipFilterMode(), groundItem.getOwnership(), client.getVarbitValue(VarbitID.IRONMAN)))
 		{
@@ -475,6 +476,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 		{
 			groundItem.setQuantity(groundItem.getQuantity() + diff);
 			groundItem.reset();
+			preloadIcon(groundItem);
 		}
 
 		handleLootbeam(tile.getWorldLocation());
@@ -527,6 +529,15 @@ public class GroundItemsModifiablePlugin extends Plugin
 
 			return entry;
 		}).toArray(MenuEntry[]::new));
+	}
+
+	/** Start rendering the icon now, on the client thread, so it is usually ready before the first frame draws it. */
+	private void preloadIcon(GroundItem item)
+	{
+		if (config.showItemIcons())
+		{
+			itemManager.getImage(item.getId(), item.getQuantity(), false);
+		}
 	}
 
 	private GroundItem buildGroundItem(final ItemLayer layer, final TileItem item)

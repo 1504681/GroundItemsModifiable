@@ -118,6 +118,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private static final int ROW_GAP = 2;
 	// per frame: each drawn item's baseline offset from its tile's text point, and the top of each tile's stack
 	private final Map<GroundItem, Integer> rowDy = new IdentityHashMap<>();
+	private final Map<GroundItem, BufferedImage> rowIcons = new IdentityHashMap<>();
 	private final Map<WorldPoint, Integer> tileTopDy = new HashMap<>();
 	// Points used to approximate the ground circle
 	private static final int CIRCLE_SEGMENTS = 24;
@@ -392,6 +393,20 @@ public class GroundItemsModifiableOverlay extends Overlay
 		// box or bar sit tight and nothing overlaps.
 		rowDy.clear();
 		tileTopDy.clear();
+		// icons still loading (fresh drops of items whose model is not cached yet) are blank: those rows show
+		// their name instead of an empty icon slot until the sprite arrives
+		rowIcons.clear();
+		if (showIcons)
+		{
+			for (GroundItem item : visibleItems)
+			{
+				final BufferedImage icon = itemManager.getImage(item.getId(), item.getQuantity(), false);
+				if (contentBounds(icon) != null)
+				{
+					rowIcons.put(item, icon);
+				}
+			}
+		}
 		{
 			final Map<WorldPoint, List<GroundItem>> rowsByTile = new HashMap<>();
 			final Map<GroundItem, Integer> order = new IdentityHashMap<>();
@@ -431,15 +446,16 @@ public class GroundItemsModifiableOverlay extends Overlay
 				boolean first = true;
 				for (GroundItem item : rows)
 				{
-					final boolean hasBox = showIcons && hasTierBox(item, iconBoxTier);
+					final boolean iconRow = rowIcons.containsKey(item);
+					final boolean hasBox = iconRow && hasTierBox(item, iconBoxTier);
 					final TimerInfo t = groundItemTimers == DespawnTimerMode.BAR ? timerInfo(item) : null;
 					final boolean hasBar = t != null && (plugin.isHotKeyPressed() || timerVisible(t));
 					final boolean hasText = !tileCollapsed || hasTierBox(item, expandTier) || (item.getQuantity() > 1 && collapsedQuantity != CollapsedQuantity.OFF);
-					final double scale = tileCollapsed && !hasTierBox(item, expandTier) ? iconScale : expandedScale;
+					final double scale = tileCollapsed && iconRow && !hasTierBox(item, expandTier) ? iconScale : expandedScale;
 					int top;
 					int bottom;
 					int iconBottom = 0;
-					if (showIcons)
+					if (iconRow)
 					{
 						top = -(ascent + iconHeight) / 2;
 						bottom = top + iconHeight;
@@ -463,7 +479,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 					if (hasBar)
 					{
 						// same placement as the bar drawing below
-						final int under = hasBox ? bottom + 2 : showIcons ? Math.max(2, iconBottom + 2) : 2;
+						final int under = hasBox ? bottom + 2 : iconRow ? Math.max(2, iconBottom + 2) : 2;
 						bottom = Math.max(bottom, under + config.ringWidth());
 					}
 					// the row is drawn scaled around its baseline
@@ -472,7 +488,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 					if (!first)
 					{
 						int step = -prevTop + ROW_GAP + bottom;
-						if (!showIcons)
+						if (!iconRow)
 						{
 							step = Math.max(step, (int) Math.round(STRING_GAP * scale));
 						}
@@ -577,12 +593,11 @@ public class GroundItemsModifiableOverlay extends Overlay
 				? item.getOffset()
 				: offsetMap.compute(item.getItemLayer().getWorldLocation(), (k, v) -> v != null ? v + 1 : 0);
 
-			BufferedImage icon = null;
+			final BufferedImage icon = rowIcons.get(item);
 			int iconWidth = 0;
 			int iconSpan = 0;
-			if (showIcons)
+			if (icon != null)
 			{
-				icon = itemManager.getImage(item.getId(), item.getQuantity(), false);
 				// item sprites only use the left 32 px of their 36 px canvas, so the cell is square
 				iconWidth = Math.max(1, iconHeight * Math.min(icon.getWidth(), icon.getHeight()) / Math.max(1, icon.getHeight()));
 				iconSpan = iconWidth + ICON_GAP;

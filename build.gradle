@@ -42,7 +42,7 @@ configurations.all {
 }
 
 group = 'com.grounditemsmodifiable'
-version = '1.12.3'
+version = '1.12.4'
 
 tasks.withType(JavaCompile).configureEach {
 	options.encoding = 'UTF-8'

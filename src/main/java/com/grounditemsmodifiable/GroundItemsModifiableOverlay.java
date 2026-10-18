@@ -116,6 +116,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 	private static final long SHIMMER_PERIOD_MS = 2400;
 	// gap between stacked rows on a tile
 	private static final int ROW_GAP = 2;
+	private static final long ICON_WAIT_MS = 1000;
 	// per frame: each drawn item's baseline offset from its tile's text point, and the top of each tile's stack
 	private final Map<GroundItem, Integer> rowDy = new IdentityHashMap<>();
 	private final Map<GroundItem, BufferedImage> rowIcons = new IdentityHashMap<>();
@@ -270,6 +271,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 		// Pass 1: decide which items are drawn at all
 		visibleItems.clear();
 		tileTotals.clear();
+		rowIcons.clear();
+		final long nowMs = System.currentTimeMillis();
 		for (GroundItem item : groundItemList)
 		{
 			final LocalPoint groundPoint = groundPoint(item);
@@ -293,6 +296,22 @@ public class GroundItemsModifiableOverlay extends Overlay
 
 				// Do not display non-highlighted items
 				if (config.showHighlightedOnly())
+				{
+					continue;
+				}
+			}
+
+			if (showIcons)
+			{
+				// a fresh drop's icon is blank until the game has its model (rare items often are not cached):
+				// hold the whole row back for a moment so name, icon and box appear together, then fall back
+				// to a name-only row if it still has not arrived
+				final BufferedImage icon = itemManager.getImage(item.getId(), item.getQuantity(), false);
+				if (contentBounds(icon) != null)
+				{
+					rowIcons.put(item, icon);
+				}
+				else if (nowMs - item.getSpawnTime().toEpochMilli() < ICON_WAIT_MS)
 				{
 					continue;
 				}
@@ -393,20 +412,6 @@ public class GroundItemsModifiableOverlay extends Overlay
 		// box or bar sit tight and nothing overlaps.
 		rowDy.clear();
 		tileTopDy.clear();
-		// icons still loading (fresh drops of items whose model is not cached yet) are blank: those rows show
-		// their name instead of an empty icon slot until the sprite arrives
-		rowIcons.clear();
-		if (showIcons)
-		{
-			for (GroundItem item : visibleItems)
-			{
-				final BufferedImage icon = itemManager.getImage(item.getId(), item.getQuantity(), false);
-				if (contentBounds(icon) != null)
-				{
-					rowIcons.put(item, icon);
-				}
-			}
-		}
 		{
 			final Map<WorldPoint, List<GroundItem>> rowsByTile = new HashMap<>();
 			final Map<GroundItem, Integer> order = new IdentityHashMap<>();

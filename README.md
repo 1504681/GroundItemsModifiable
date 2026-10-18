@@ -93,6 +93,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.12.4: a fresh drop's row waits for its icon (up to 1 s), so name, icon and box appear together
 - 1.12.3: icons are requested the moment an item drops; while one is still loading its row shows the name instead of an empty icon slot
 - 1.12.2: fix lag with many players around while tiles are highlighted: only actors standing over a highlighted tile are cut out of it
 - 1.12.1: Custom theme options moved to their own collapsed section

@@ -348,6 +348,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 		final boolean compact = config.compactMode() && showIcons;
 		final CollapsedQuantity collapsedQuantity = config.collapsedQuantity();
 		final HighlightTier iconBoxTier = config.iconBoxTier();
+		final boolean boxHighlighted = config.boxHighlighted();
 		final boolean boxWrapsName = config.iconBoxWrapsName();
 		final HighlightTier shimmerTier = config.shimmerTier();
 		final HighlightTier expandTier = config.expandTier();
@@ -452,7 +453,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 				for (GroundItem item : rows)
 				{
 					final boolean iconRow = rowIcons.containsKey(item);
-					final boolean hasBox = iconRow && hasTierBox(item, iconBoxTier);
+					final boolean hasBox = iconRow && (hasTierBox(item, iconBoxTier) || (boxHighlighted && item.highlighted));
 					final TimerInfo t = groundItemTimers == DespawnTimerMode.BAR ? timerInfo(item) : null;
 					final boolean hasBar = t != null && (plugin.isHotKeyPressed() || timerVisible(t));
 					final boolean hasText = !tileCollapsed || hasTierBox(item, expandTier) || (item.getQuantity() > 1 && collapsedQuantity != CollapsedQuantity.OFF);
@@ -715,15 +716,17 @@ public class GroundItemsModifiableOverlay extends Overlay
 			Shape boxShape = null;
 			Color boxColor = null;
 			boolean shimmer = false;
-			if (icon != null && iconBoxTier != HighlightTier.OFF)
+			if (icon != null)
 			{
 				final long value = plugin.getValueByMode(item.getGePrice(), item.getHaPrice());
-				if (value > iconBoxTier.getValueFromTier(config))
+				final boolean tierBox = hasTierBox(item, iconBoxTier);
+				if (tierBox || (boxHighlighted && item.highlighted))
 				{
-					// a colour picked for this item wins; otherwise the tier's. The name below uses the same colour,
-					// so a highlighted-list colour cannot leave white text inside a green box
+					// a colour picked for this item wins; otherwise the tier's, or the highlight colour for a
+					// highlighted item below the tier. The name below uses the same colour, so a highlighted-list
+					// colour cannot leave white text inside a green box
 					final Color picked = plugin.getItemColor(item.getId());
-					boxColor = look.tint(picked != null ? picked : plugin.getPriceTierColor(value));
+					boxColor = look.tint(picked != null ? picked : tierBox ? plugin.getPriceTierColor(value) : config.highlightedColor());
 					if (!collapsed && boxWrapsName)
 					{
 						// one rectangle around icon and name

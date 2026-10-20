@@ -35,6 +35,7 @@ Ground overlay
 | Always expanded from tier | High | In icons-only mode, items above this tier always show name and price |
 | Stack size next to icon | Number only | Collapsed icons show `1,000` right after the icon; can follow the names format or be off |
 | Icon box from tier | Low | Tier-coloured box around icons of items worth at least this tier; with the ring timer its border is the timer |
+| Box highlighted items | on | Highlight-list items get a box in their highlight colour even below that tier |
 | Box wraps name | on | When names show, the tier box wraps icon and name in one rectangle |
 | Shimmer from tier | High | Tier boxes of items worth at least this tier pulse and get a light sweep |
 | Tile value total | on | Total line above tiles with 2+ items |
@@ -93,6 +94,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.13.0: highlighted items get a box in their highlight colour, even below the box tier
 - 1.12.4: a fresh drop's row waits for its icon (up to 1 s), so name, icon and box appear together
 - 1.12.3: icons are requested the moment an item drops; while one is still loading its row shows the name instead of an empty icon slot
 - 1.12.2: fix lag with many players around while tiles are highlighted: only actors standing over a highlighted tile are cut out of it

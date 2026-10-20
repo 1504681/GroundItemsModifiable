@@ -63,7 +63,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.12.4";
+	String VERSION = "1.13.0";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
@@ -350,10 +350,22 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "boxHighlighted",
+		name = "Box highlighted items",
+		description = "Items on the highlight list get a box too, in their highlight colour, even when worth less than 'Icon box from tier'.",
+		position = 13,
+		section = overlaySection
+	)
+	default boolean boxHighlighted()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "iconBoxWrapsName",
 		name = "Box wraps name",
 		description = "When a tile shows names (always, or while hovered in icons-only mode), the tier box grows to wrap the icon and the name together.",
-		position = 13,
+		position = 14,
 		section = overlaySection
 	)
 	default boolean iconBoxWrapsName()
@@ -365,7 +377,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "shimmerTier",
 		name = "Shimmer from tier",
 		description = "Tier boxes of items at or above this value tier pulse softly and have a light sweep across them. Needs 'Icon box from tier'.",
-		position = 14,
+		position = 15,
 		section = overlaySection
 	)
 	default HighlightTier shimmerTier()
@@ -377,7 +389,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "showTileTotal",
 		name = "Tile value total",
 		description = "When two or more items share a tile, draw a total value line above them, coloured by value tier.",
-		position = 15,
+		position = 16,
 		section = overlaySection
 	)
 	default boolean showTileTotal()
@@ -389,7 +401,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileTotalMinimum",
 		name = "Total minimum value",
 		description = "Only show the tile total when it is at least this much.",
-		position = 16,
+		position = 17,
 		section = overlaySection
 	)
 	default int tileTotalMinimum()
@@ -401,7 +413,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "menuOrder",
 		name = "Order like the menu",
 		description = "Stack a tile's items in the order the right-click menu lists them: the top row is the item left-click Take picks up.",
-		position = 17,
+		position = 18,
 		section = overlaySection
 	)
 	default boolean menuOrder()

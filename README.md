@@ -95,6 +95,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.13.2: fix Box highlighted items also boxing items only coloured by a value tier, in the highlight colour
 - 1.13.1: optional shimmer for highlighted items
 - 1.13.0: highlighted items get a box in their highlight colour, even below the box tier
 - 1.12.4: a fresh drop's row waits for its icon (up to 1 s), so name, icon and box appear together

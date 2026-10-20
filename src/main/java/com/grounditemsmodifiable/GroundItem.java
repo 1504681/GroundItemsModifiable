@@ -55,6 +55,8 @@ class GroundItem
 
 	// cached values derived from config
 	boolean highlighted;
+	// on the highlight list itself; highlighted is also true for items only coloured by a value tier
+	boolean listed;
 	boolean hidden;
 	Color color;
 
@@ -80,7 +82,7 @@ class GroundItem
 
 	void reset()
 	{
-		highlighted = hidden = false;
+		highlighted = listed = hidden = false;
 		color = null;
 	}
 }

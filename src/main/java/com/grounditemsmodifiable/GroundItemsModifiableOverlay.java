@@ -454,7 +454,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 				for (GroundItem item : rows)
 				{
 					final boolean iconRow = rowIcons.containsKey(item);
-					final boolean hasBox = iconRow && (hasTierBox(item, iconBoxTier) || (boxHighlighted && item.highlighted));
+					final boolean hasBox = iconRow && (hasTierBox(item, iconBoxTier) || (boxHighlighted && item.listed));
 					final TimerInfo t = groundItemTimers == DespawnTimerMode.BAR ? timerInfo(item) : null;
 					final boolean hasBar = t != null && (plugin.isHotKeyPressed() || timerVisible(t));
 					final boolean hasText = !tileCollapsed || hasTierBox(item, expandTier) || (item.getQuantity() > 1 && collapsedQuantity != CollapsedQuantity.OFF);
@@ -721,7 +721,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 			{
 				final long value = plugin.getValueByMode(item.getGePrice(), item.getHaPrice());
 				final boolean tierBox = hasTierBox(item, iconBoxTier);
-				if (tierBox || (boxHighlighted && item.highlighted))
+				if (tierBox || (boxHighlighted && item.listed))
 				{
 					// a colour picked for this item wins; otherwise the tier's, or the highlight colour for a
 					// highlighted item below the tier. The name below uses the same colour, so a highlighted-list
@@ -742,7 +742,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 							iconWidth + 2 * BOX_PAD, iconHeight + 2 * BOX_PAD, BOX_ARC, BOX_ARC);
 					}
 					shimmer = (shimmerTier != HighlightTier.OFF && value >= shimmerTier.getValueFromTier(config))
-						|| (shimmerHighlighted && item.highlighted);
+						|| (shimmerHighlighted && item.listed);
 					graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 					boxShape = look.perimeter(box);
 					// shimmering boxes breathe between a faint and a stronger fill

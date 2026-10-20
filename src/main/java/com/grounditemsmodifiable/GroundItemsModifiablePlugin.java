@@ -429,6 +429,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 		final boolean hidden = isHidden(item);
 
 		item.highlighted = highlighted != null;
+		item.listed = isHiddenOrHighlighted(item) == HIGHLIGHTED;
 		item.hidden = hidden;
 		item.color = getItemColor(highlighted, hidden);
 	}

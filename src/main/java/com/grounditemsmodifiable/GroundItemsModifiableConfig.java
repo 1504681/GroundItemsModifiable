@@ -63,7 +63,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.13.0";
+	String VERSION = "1.13.1";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
@@ -386,10 +386,22 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "shimmerHighlighted",
+		name = "Shimmer highlighted items",
+		description = "Boxes of items on the highlight list shimmer too, whatever they are worth. Needs 'Box highlighted items' for items below the box tier.",
+		position = 16,
+		section = overlaySection
+	)
+	default boolean shimmerHighlighted()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 		keyName = "showTileTotal",
 		name = "Tile value total",
 		description = "When two or more items share a tile, draw a total value line above them, coloured by value tier.",
-		position = 16,
+		position = 17,
 		section = overlaySection
 	)
 	default boolean showTileTotal()
@@ -401,7 +413,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "tileTotalMinimum",
 		name = "Total minimum value",
 		description = "Only show the tile total when it is at least this much.",
-		position = 17,
+		position = 18,
 		section = overlaySection
 	)
 	default int tileTotalMinimum()
@@ -413,7 +425,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "menuOrder",
 		name = "Order like the menu",
 		description = "Stack a tile's items in the order the right-click menu lists them: the top row is the item left-click Take picks up.",
-		position = 18,
+		position = 19,
 		section = overlaySection
 	)
 	default boolean menuOrder()

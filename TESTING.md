@@ -7,3 +7,4 @@
 - Busy world (GE) with Highlight tiles on: no lag; a player walking over a highlighted tile still covers it.
 - Fresh rare drop (PvP kill, uncharged/degraded items): name, icon and box appear together, never an empty icon slot; no noticeable delay.
 - Highlight a cheap item (e.g. Bones): it gets a box in the highlight colour; a valuable highlighted item keeps its tier colour.
+- Shimmer highlighted items on: a cheap highlighted item's box pulses and sweeps; off: it doesn't.

@@ -351,6 +351,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 		final boolean boxHighlighted = config.boxHighlighted();
 		final boolean boxWrapsName = config.iconBoxWrapsName();
 		final HighlightTier shimmerTier = config.shimmerTier();
+		final boolean shimmerHighlighted = config.shimmerHighlighted();
 		final HighlightTier expandTier = config.expandTier();
 		final boolean menuOrder = config.menuOrder();
 		final BarWidth barWidth = config.barWidth();
@@ -740,7 +741,8 @@ public class GroundItemsModifiableOverlay extends Overlay
 						box = new RoundRectangle2D.Float(iconX - BOX_PAD, iconY - BOX_PAD,
 							iconWidth + 2 * BOX_PAD, iconHeight + 2 * BOX_PAD, BOX_ARC, BOX_ARC);
 					}
-					shimmer = shimmerTier != HighlightTier.OFF && value >= shimmerTier.getValueFromTier(config);
+					shimmer = (shimmerTier != HighlightTier.OFF && value >= shimmerTier.getValueFromTier(config))
+						|| (shimmerHighlighted && item.highlighted);
 					graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 					boxShape = look.perimeter(box);
 					// shimmering boxes breathe between a faint and a stronger fill

@@ -38,6 +38,7 @@ Ground overlay
 | Box highlighted items | on | Highlight-list items get a box in their highlight colour even below that tier |
 | Box wraps name | on | When names show, the tier box wraps icon and name in one rectangle |
 | Shimmer from tier | High | Tier boxes of items worth at least this tier pulse and get a light sweep |
+| Shimmer highlighted items | off | Highlight-list items shimmer whatever they are worth |
 | Tile value total | on | Total line above tiles with 2+ items |
 | Total minimum value | 0 | Hide totals below this value |
 | Order like the menu | on | Rows stack in right-click menu order; the top row is what left-click Take picks up |
@@ -94,6 +95,7 @@ Renames and menu
 
 ## Changelog
 
+- 1.13.1: optional shimmer for highlighted items
 - 1.13.0: highlighted items get a box in their highlight colour, even below the box tier
 - 1.12.4: a fresh drop's row waits for its icon (up to 1 s), so name, icon and box appear together
 - 1.12.3: icons are requested the moment an item drops; while one is still loading its row shows the name instead of an empty icon slot

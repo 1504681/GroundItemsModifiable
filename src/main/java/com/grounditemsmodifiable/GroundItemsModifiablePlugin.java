@@ -532,6 +532,79 @@ public class GroundItemsModifiablePlugin extends Plugin
 		}).toArray(MenuEntry[]::new));
 	}
 
+	/** ::whyshown: for the nearest drawn items, which rule keeps each one from being hidden. */
+	private void whyShown()
+	{
+		final net.runelite.api.Player player = client.getLocalPlayer();
+		if (player == null)
+		{
+			return;
+		}
+		final WorldPoint me = player.getWorldLocation();
+		final int under = config.getHideUnderValue();
+		final int accountType = client.getVarbitValue(VarbitID.IRONMAN);
+		final List<GroundItem> near = new ArrayList<>();
+		for (GroundItem item : collectedGroundItems.values())
+		{
+			final WorldPoint wp = item.getItemLayer().getWorldLocation();
+			if (wp.getPlane() == me.getPlane() && wp.distanceTo(me) <= 15
+				&& shouldDisplayItem(config.ownershipFilterMode(), item.getOwnership(), accountType))
+			{
+				near.add(item);
+			}
+		}
+		near.sort(java.util.Comparator.comparingInt(i -> i.getItemLayer().getWorldLocation().distanceTo(me)));
+		chatMessage("Hide under value: " + QuantityFormatter.quantityToStackSize(under) + " (GE and HA of the whole stack must both be under it)");
+		int hidden = 0;
+		int shown = 0;
+		for (GroundItem item : near)
+		{
+			updateItemColor(item);
+			if (item.hidden && !item.highlighted)
+			{
+				hidden++;
+				continue;
+			}
+			if (shown++ >= 12)
+			{
+				continue;
+			}
+			final String reason;
+			if (isHiddenOrHighlighted(item) == HIGHLIGHTED)
+			{
+				reason = "on the highlight list";
+			}
+			else if (item.highlighted)
+			{
+				reason = "has a value tier or item colour, and coloured items are never hidden";
+			}
+			else if (under <= 0)
+			{
+				reason = "Hide under value is 0";
+			}
+			else if (!(item.getGePrice() > 0 || item.isTradeable() || !config.dontHideUntradeables()))
+			{
+				reason = "untradeable, kept by 'Don't hide untradeables'";
+			}
+			else if (item.getGePrice() >= under && item.getHaPrice() >= under)
+			{
+				reason = "GE and HA both at least " + QuantityFormatter.quantityToStackSize(under);
+			}
+			else if (item.getGePrice() >= under)
+			{
+				reason = "GE at least " + QuantityFormatter.quantityToStackSize(under);
+			}
+			else
+			{
+				reason = "HA at least " + QuantityFormatter.quantityToStackSize(under);
+			}
+			chatMessage(item.getDisplayName() + (item.getQuantity() > 1 ? " x " + item.getQuantity() : "")
+				+ " (GE " + QuantityFormatter.quantityToStackSize(item.getGePrice())
+				+ ", HA " + QuantityFormatter.quantityToStackSize(item.getHaPrice()) + "): " + reason);
+		}
+		chatMessage(shown + " shown" + (shown > 12 ? " (nearest 12 listed)" : "") + ", " + hidden + " hidden within 15 tiles.");
+	}
+
 	/** Start rendering the icon now, on the client thread, so it is usually ready before the first frame draws it. */
 	private void preloadIcon(GroundItem item)
 	{
@@ -741,6 +814,9 @@ public class GroundItemsModifiablePlugin extends Plugin
 				break;
 			case "pileorder":
 				overlay.requestPileDump();
+				break;
+			case "whyshown":
+				whyShown();
 				break;
 			case "importgrounditems":
 				final int copied = importCoreConfig(true);

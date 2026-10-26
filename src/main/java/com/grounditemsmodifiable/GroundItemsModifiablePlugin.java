@@ -554,13 +554,14 @@ public class GroundItemsModifiablePlugin extends Plugin
 			}
 		}
 		near.sort(java.util.Comparator.comparingInt(i -> i.getItemLayer().getWorldLocation().distanceTo(me)));
-		chatMessage("Hide under value: " + QuantityFormatter.quantityToStackSize(under) + " (GE and HA of the whole stack must both be under it)");
+		chatMessage("Hide under value: " + QuantityFormatter.quantityToStackSize(under) + " (GE and HA of the whole stack must both be under it)."
+			+ (hotKeyPressed ? " The hotkey counts as held right now, which shows hidden items." : ""));
 		int hidden = 0;
 		int shown = 0;
 		for (GroundItem item : near)
 		{
 			updateItemColor(item);
-			if (item.hidden && !item.highlighted)
+			if (item.hidden && !item.highlighted && !hotKeyPressed)
 			{
 				hidden++;
 				continue;
@@ -570,13 +571,21 @@ public class GroundItemsModifiablePlugin extends Plugin
 				continue;
 			}
 			final String reason;
-			if (isHiddenOrHighlighted(item) == HIGHLIGHTED)
+			if (item.hidden && !item.highlighted)
+			{
+				reason = "hidden, drawn because the hotkey counts as held";
+			}
+			else if (isHiddenOrHighlighted(item) == HIGHLIGHTED)
 			{
 				reason = "on the highlight list";
 			}
+			else if (getItemColor(item.getItemId()) != null)
+			{
+				reason = "has its own picked colour, and coloured items are never hidden (right-click it with the hotkey held to reset)";
+			}
 			else if (item.highlighted)
 			{
-				reason = "has a value tier or item colour, and coloured items are never hidden";
+				reason = "has a value tier colour, and coloured items are never hidden";
 			}
 			else if (under <= 0)
 			{

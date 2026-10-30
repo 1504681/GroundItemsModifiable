@@ -63,7 +63,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.15.0";
+	String VERSION = "1.15.1";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
@@ -101,6 +101,18 @@ public interface GroundItemsModifiableConfig extends Config
 		section = bonusSection
 	)
 	default boolean herbSackHerbs()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "seedBoxSeeds",
+		name = "Seed box: highlight seeds",
+		description = "While a seed box is in your inventory, seeds are highlighted like items on the highlight list.",
+		position = 1,
+		section = bonusSection
+	)
+	default boolean seedBoxSeeds()
 	{
 		return true;
 	}

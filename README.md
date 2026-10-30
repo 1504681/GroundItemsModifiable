@@ -104,9 +104,11 @@ Bonus
 | Setting | Default | What it does |
 |---|---|---|
 | Herb sack: highlight grimy herbs | on | While any herb sack is in your inventory, unnoted grimy herbs are highlighted; a herb hidden by exact name stays hidden |
+| Seed box: highlight seeds | on | While a seed box is in your inventory, seeds are highlighted |
 
 ## Changelog
 
+- 1.15.1: seeds highlighted while you carry a seed box
 - 1.15.0: Bonus section; grimy herbs highlighted while you carry a herb sack
 - 1.14.0: Highlighted if noted list; `::whyshown` prints why nearby items are not hidden
 - 1.13.2: fix Box highlighted items also boxing items only coloured by a value tier, in the highlight colour

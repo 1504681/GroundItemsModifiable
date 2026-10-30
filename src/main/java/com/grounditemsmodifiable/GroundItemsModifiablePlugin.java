@@ -173,6 +173,8 @@ public class GroundItemsModifiablePlugin extends Plugin
 	private ItemList notedHighlightItems = new ItemList(Collections.emptyList());
 	// a herb sack (any variant) is in the inventory: unnoted grimy herbs count as highlighted
 	private boolean carryingHerbSack;
+	// a seed box is in the inventory: seeds count as highlighted
+	private boolean carryingSeedBox;
 	// lower-cased real name (dose stripped when grouping) -> custom name
 	private volatile Map<String, String> renames = Collections.emptyMap();
 	// wildcard patterns, in file order
@@ -483,22 +485,21 @@ public class GroundItemsModifiablePlugin extends Plugin
 	private void updateCarried(ItemContainer inventory)
 	{
 		boolean herbSack = false;
+		boolean seedBox = false;
 		if (inventory != null)
 		{
 			for (Item i : inventory.getItems())
 			{
 				final int id = i.getId();
-				if (id == ItemID.SLAYER_HERB_SACK || id == ItemID.SLAYER_HERB_SACK_OPEN
-					|| id == ItemID.SLAYER_HERB_SACK_SILK || id == ItemID.SLAYER_HERB_SACK_SILK_OPEN)
-				{
-					herbSack = true;
-					break;
-				}
+				herbSack |= id == ItemID.SLAYER_HERB_SACK || id == ItemID.SLAYER_HERB_SACK_OPEN
+					|| id == ItemID.SLAYER_HERB_SACK_SILK || id == ItemID.SLAYER_HERB_SACK_SILK_OPEN;
+				seedBox |= id == ItemID.SEED_BOX || id == ItemID.SEED_BOX_OPEN;
 			}
 		}
-		if (herbSack != carryingHerbSack)
+		if (herbSack != carryingHerbSack || seedBox != carryingSeedBox)
 		{
 			carryingHerbSack = herbSack;
+			carryingSeedBox = seedBox;
 			// colours and hidden/highlighted flags are cached per item
 			collectedGroundItems.values().forEach(GroundItem::reset);
 			handleLootbeams();
@@ -1044,7 +1045,8 @@ public class GroundItemsModifiablePlugin extends Plugin
 		{
 			hl = Math.max(hl, notedHighlightItems.matches(item));
 		}
-		else if (carryingHerbSack && config.herbSackHerbs() && item.getName().startsWith("Grimy "))
+		else if ((carryingHerbSack && config.herbSackHerbs() && item.getName().startsWith("Grimy "))
+			|| (carryingSeedBox && config.seedBoxSeeds() && item.getName().endsWith(" seed")))
 		{
 			// ranks like a wildcard highlight: a herb hidden by its exact name stays hidden
 			hl = Math.max(hl, ItemList.WILDCARD);

@@ -9,3 +9,5 @@
 - Highlight a cheap item (e.g. Bones): it gets a box in the highlight colour; a valuable highlighted item keeps its tier colour.
 - Shimmer highlighted items on: a cheap highlighted item's box pulses and sweeps; off: it doesn't.
 - Box highlighted items on, box tier High: a value-tier item below High (e.g. 288 Blood runes) has no box; only highlight-list items get the highlight-colour box.
+- Put Logs in Highlighted if noted: noted logs are highlighted (colour, box, lootbeam if on); unnoted logs follow the normal rules.
+- `::whyshown` next to a few items: one line per shown item with the right reason.

@@ -166,6 +166,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 
 	private ItemList highlightedItems = new ItemList(Collections.emptyList());
 	private ItemList hiddenItems = new ItemList(Collections.emptyList());
+	private ItemList notedHighlightItems = new ItemList(Collections.emptyList());
 	// lower-cased real name (dose stripped when grouping) -> custom name
 	private volatile Map<String, String> renames = Collections.emptyMap();
 	// wildcard patterns, in file order
@@ -668,6 +669,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 	{
 		highlightedItems = new ItemList(Text.fromCSV(config.getHighlightItems()));
 		hiddenItems = new ItemList(Text.fromCSV(config.getHiddenItems()));
+		notedHighlightItems = new ItemList(Text.fromCSV(config.notedHighlightItems()));
 		parseRenames();
 
 		// Cache colors
@@ -995,6 +997,11 @@ public class GroundItemsModifiablePlugin extends Plugin
 	private int isHiddenOrHighlighted(GroundItem item)
 	{
 		int hl = highlightedItems.matches(item);
+		// a noted drop also counts as highlighted when it is on the noted-only list (id is the note, itemId the item)
+		if (item.getId() != item.getItemId())
+		{
+			hl = Math.max(hl, notedHighlightItems.matches(item));
+		}
 		if (hl == ItemList.EXACT)
 		{
 			return HIGHLIGHTED;

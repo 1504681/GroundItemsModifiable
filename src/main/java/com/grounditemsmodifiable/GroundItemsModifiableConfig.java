@@ -63,7 +63,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.13.2";
+	String VERSION = "1.14.0";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
@@ -112,10 +112,22 @@ public interface GroundItemsModifiableConfig extends Config
 	void setHighlightedItem(String key);
 
 	@ConfigItem(
+		keyName = "notedHighlightItems",
+		name = "Highlighted if noted",
+		description = "Items highlighted only when they drop noted; the unnoted item follows the normal rules. Same format as Highlighted items: item1, item2, Logs>100, Grimy *",
+		position = 1,
+		section = itemLists
+	)
+	default String notedHighlightItems()
+	{
+		return "";
+	}
+
+	@ConfigItem(
 		keyName = "hiddenItems",
 		name = "Hidden items",
 		description = "Configures hidden ground items. Format: item1, item2, item3",
-		position = 1,
+		position = 2,
 		section = itemLists
 	)
 	default String getHiddenItems()
@@ -134,7 +146,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "showHighlightedOnly",
 		name = "Show highlighted items only",
 		description = "Configures whether or not to draw items only on your highlighted list.",
-		position = 2,
+		position = 3,
 		section = itemLists
 	)
 	default boolean showHighlightedOnly()
@@ -146,7 +158,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "dontHideUntradeables",
 		name = "Do not hide untradeables",
 		description = "Configures whether or not untradeable items ignore hiding under settings.",
-		position = 3,
+		position = 4,
 		section = itemLists
 	)
 	default boolean dontHideUntradeables()
@@ -158,7 +170,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = "hideUnderValue",
 		name = "Hide under value",
 		description = "Configures hidden ground items under both GE and HA value.",
-		position = 4,
+		position = 5,
 		section = itemLists
 	)
 	default int getHideUnderValue()
@@ -170,7 +182,7 @@ public interface GroundItemsModifiableConfig extends Config
 		keyName = OWNERSHIP_FILTER_MODE,
 		name = "Ownership filter",
 		description = "Show all items, takeable items, or only your or your group's drops.",
-		position = 5,
+		position = 6,
 		section = itemLists
 	)
 	default OwnershipFilterMode ownershipFilterMode()

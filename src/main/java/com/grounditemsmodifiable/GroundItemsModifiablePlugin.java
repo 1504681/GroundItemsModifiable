@@ -62,7 +62,9 @@ import lombok.Value;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
+import net.runelite.api.ItemContainer;
 import net.runelite.api.ItemLayer;
 import net.runelite.api.KeyCode;
 import net.runelite.api.Menu;
@@ -78,11 +80,13 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.CommandExecuted;
 import net.runelite.api.events.FocusChanged;
+import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.ItemDespawned;
 import net.runelite.api.events.ItemQuantityChanged;
 import net.runelite.api.events.ItemSpawned;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.WorldViewUnloaded;
+import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.Notifier;
@@ -167,6 +171,8 @@ public class GroundItemsModifiablePlugin extends Plugin
 	private ItemList highlightedItems = new ItemList(Collections.emptyList());
 	private ItemList hiddenItems = new ItemList(Collections.emptyList());
 	private ItemList notedHighlightItems = new ItemList(Collections.emptyList());
+	// a herb sack (any variant) is in the inventory: unnoted grimy herbs count as highlighted
+	private boolean carryingHerbSack;
 	// lower-cased real name (dose stripped when grouping) -> custom name
 	private volatile Map<String, String> renames = Collections.emptyMap();
 	// wildcard patterns, in file order
@@ -245,6 +251,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 		keyManager.registerKeyListener(hotkeyListener);
 		importCoreConfig(false);
 		clientThread.invoke(this::migrateLegacyRenames);
+		clientThread.invoke(() -> updateCarried(client.getItemContainer(InventoryID.INV)));
 		executor.execute(this::reset);
 		startedAt = System.currentTimeMillis();
 		if (config.exclusiveWithCore())
@@ -462,6 +469,40 @@ public class GroundItemsModifiablePlugin extends Plugin
 		}
 
 		handleLootbeam(tile.getWorldLocation());
+	}
+
+	@Subscribe
+	public void onItemContainerChanged(ItemContainerChanged event)
+	{
+		if (event.getContainerId() == InventoryID.INV)
+		{
+			updateCarried(event.getItemContainer());
+		}
+	}
+
+	private void updateCarried(ItemContainer inventory)
+	{
+		boolean herbSack = false;
+		if (inventory != null)
+		{
+			for (Item i : inventory.getItems())
+			{
+				final int id = i.getId();
+				if (id == ItemID.SLAYER_HERB_SACK || id == ItemID.SLAYER_HERB_SACK_OPEN
+					|| id == ItemID.SLAYER_HERB_SACK_SILK || id == ItemID.SLAYER_HERB_SACK_SILK_OPEN)
+				{
+					herbSack = true;
+					break;
+				}
+			}
+		}
+		if (herbSack != carryingHerbSack)
+		{
+			carryingHerbSack = herbSack;
+			// colours and hidden/highlighted flags are cached per item
+			collectedGroundItems.values().forEach(GroundItem::reset);
+			handleLootbeams();
+		}
 	}
 
 	@Subscribe
@@ -998,9 +1039,15 @@ public class GroundItemsModifiablePlugin extends Plugin
 	{
 		int hl = highlightedItems.matches(item);
 		// a noted drop also counts as highlighted when it is on the noted-only list (id is the note, itemId the item)
-		if (item.getId() != item.getItemId())
+		final boolean noted = item.getId() != item.getItemId();
+		if (noted)
 		{
 			hl = Math.max(hl, notedHighlightItems.matches(item));
+		}
+		else if (carryingHerbSack && config.herbSackHerbs() && item.getName().startsWith("Grimy "))
+		{
+			// ranks like a wildcard highlight: a herb hidden by its exact name stays hidden
+			hl = Math.max(hl, ItemList.WILDCARD);
 		}
 		if (hl == ItemList.EXACT)
 		{

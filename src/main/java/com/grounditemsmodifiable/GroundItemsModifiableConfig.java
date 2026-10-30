@@ -63,7 +63,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.14.0";
+	String VERSION = "1.15.0";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
@@ -81,9 +81,29 @@ public interface GroundItemsModifiableConfig extends Config
 	@ConfigSection(
 		name = "Ground Items Modifiable v" + VERSION,
 		description = "Plugin version and how it works alongside the built-in Ground Items plugin.",
-		position = 12
+		position = 13
 	)
 	String aboutSection = "aboutSection";
+
+	@ConfigSection(
+		name = "Bonus",
+		description = "Extra highlights that depend on what you carry.",
+		position = 12,
+		closedByDefault = true
+	)
+	String bonusSection = "bonusSection";
+
+	@ConfigItem(
+		keyName = "herbSackHerbs",
+		name = "Herb sack: highlight grimy herbs",
+		description = "While a herb sack (any variant) is in your inventory, unnoted grimy herbs are highlighted like items on the highlight list.",
+		position = 0,
+		section = bonusSection
+	)
+	default boolean herbSackHerbs()
+	{
+		return true;
+	}
 
 	@ConfigSection(
 		name = "Item lists",

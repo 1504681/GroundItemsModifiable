@@ -99,8 +99,15 @@ Renames and menu
 | Item renames | empty | Your renames as `Real name=Custom name` lines, written by the Rename menu |
 | Custom names in menu | on | Use renamed items in the right-click menu too |
 
+Bonus
+
+| Setting | Default | What it does |
+|---|---|---|
+| Herb sack: highlight grimy herbs | on | While any herb sack is in your inventory, unnoted grimy herbs are highlighted; a herb hidden by exact name stays hidden |
+
 ## Changelog
 
+- 1.15.0: Bonus section; grimy herbs highlighted while you carry a herb sack
 - 1.14.0: Highlighted if noted list; `::whyshown` prints why nearby items are not hidden
 - 1.13.2: fix Box highlighted items also boxing items only coloured by a value tier, in the highlight colour
 - 1.13.1: optional shimmer for highlighted items

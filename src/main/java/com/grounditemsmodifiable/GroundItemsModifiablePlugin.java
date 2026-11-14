@@ -103,6 +103,7 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.PluginManager;
+import com.grounditemsmodifiable.config.BoxArea;
 import com.grounditemsmodifiable.config.HighlightTier;
 import com.grounditemsmodifiable.config.ItemHighlightMode;
 import com.grounditemsmodifiable.config.MenuHighlightMode;
@@ -132,6 +133,8 @@ public class GroundItemsModifiablePlugin extends Plugin
 	private static final String HIGHLIGHT_COLOR_PREFIX = "highlight_";
 	// pre-1.1 storage of renames, migrated into the renames text box on start
 	private static final String LEGACY_NAME_PREFIX = "name_";
+	// pre-1.16 boolean, replaced by the "Box covers" choice
+	private static final String LEGACY_BOX_WRAPS_NAME = "iconBoxWrapsName";
 	// "(4)", "(3)" ... dose and charge suffixes
 	private static final Pattern DOSE_SUFFIX = Pattern.compile("\\s*\\(\\d+\\)$");
 	// config group of the built-in Ground Items plugin, imported on first run
@@ -252,6 +255,7 @@ public class GroundItemsModifiablePlugin extends Plugin
 		mouseManager.registerMouseListener(mouseAdapter);
 		keyManager.registerKeyListener(hotkeyListener);
 		importCoreConfig(false);
+		migrateBoxWrapsName();
 		clientThread.invoke(this::migrateLegacyRenames);
 		clientThread.invoke(() -> updateCarried(client.getItemContainer(InventoryID.INV)));
 		executor.execute(this::reset);
@@ -1483,6 +1487,24 @@ public class GroundItemsModifiablePlugin extends Plugin
 		}
 
 		config.setRenames(String.join("\n", lines));
+	}
+
+	/**
+	 * Before 1.16 "Box wraps name" was a toggle; off now means "Box covers: Icon only".
+	 */
+	private void migrateBoxWrapsName()
+	{
+		final String group = GroundItemsModifiableConfig.GROUP;
+		final String old = configManager.getConfiguration(group, LEGACY_BOX_WRAPS_NAME);
+		if (old == null)
+		{
+			return;
+		}
+		if ("false".equals(old) && configManager.getConfiguration(group, "boxArea") == null)
+		{
+			configManager.setConfiguration(group, "boxArea", BoxArea.ICON);
+		}
+		configManager.unsetConfiguration(group, LEGACY_BOX_WRAPS_NAME);
 	}
 
 	/**

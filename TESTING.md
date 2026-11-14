@@ -11,3 +11,5 @@
 - Box highlighted items on, box tier High: a value-tier item below High (e.g. 288 Blood runes) has no box; only highlight-list items get the highlight-colour box.
 - Herb sack in inventory: unnoted grimy herbs on the ground turn highlighted (colour, box if on); bank the sack and they go back to normal; noted grimy herbs never change.
 - Seed box in inventory: seeds on the ground turn highlighted; bank the box and they go back to normal; the herb sack toggle doesn't affect seeds.
+- Box covers: Name only boxes just the name (icon outside the box), Icon only boxes the icon, Icon and name as before; collapsed icons in icons-only mode still box the icon; with Show item icons off, Name only boxes the names. Ring timer runs around the name box; bar sits under it.
+- Upgrading from 1.15.x with Box wraps name off: Box covers starts as Icon only.

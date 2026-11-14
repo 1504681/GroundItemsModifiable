@@ -26,6 +26,7 @@
 package com.grounditemsmodifiable;
 
 import com.grounditemsmodifiable.config.BarWidth;
+import com.grounditemsmodifiable.config.BoxArea;
 import com.grounditemsmodifiable.config.CollapsedQuantity;
 import com.grounditemsmodifiable.config.DespawnTimerMode;
 import static com.grounditemsmodifiable.config.ItemHighlightMode.MENU;
@@ -349,7 +350,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 		final CollapsedQuantity collapsedQuantity = config.collapsedQuantity();
 		final HighlightTier iconBoxTier = config.iconBoxTier();
 		final boolean boxHighlighted = config.boxHighlighted();
-		final boolean boxWrapsName = config.iconBoxWrapsName();
+		final BoxArea boxArea = config.boxArea();
 		final HighlightTier shimmerTier = config.shimmerTier();
 		final boolean shimmerHighlighted = config.shimmerHighlighted();
 		final HighlightTier expandTier = config.expandTier();
@@ -454,7 +455,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 				for (GroundItem item : rows)
 				{
 					final boolean iconRow = rowIcons.containsKey(item);
-					final boolean hasBox = iconRow && (hasTierBox(item, iconBoxTier) || (boxHighlighted && item.listed));
+					final boolean hasBox = (iconRow || boxArea == BoxArea.NAME) && (hasTierBox(item, iconBoxTier) || (boxHighlighted && item.listed));
 					final TimerInfo t = groundItemTimers == DespawnTimerMode.BAR ? timerInfo(item) : null;
 					final boolean hasBar = t != null && (plugin.isHotKeyPressed() || timerVisible(t));
 					final boolean hasText = !tileCollapsed || hasTierBox(item, expandTier) || (item.getQuantity() > 1 && collapsedQuantity != CollapsedQuantity.OFF);
@@ -712,12 +713,13 @@ public class GroundItemsModifiableOverlay extends Overlay
 				drawRectangle(graphics, itemHighlightBox, topItem && mouseInHighlightBox ? Color.GREEN : color, item.highlighted, false);
 			}
 
-			// value-tier box around the icon
+			// value-tier box around the icon, the icon and name, or the name alone
 			RoundRectangle2D box = null;
 			Shape boxShape = null;
 			Color boxColor = null;
 			boolean shimmer = false;
-			if (icon != null)
+			final BoxArea boxCovers = RowBox.resolve(boxArea, icon != null, collapsed);
+			if (boxCovers != null)
 			{
 				final long value = plugin.getValueByMode(item.getGePrice(), item.getHaPrice());
 				final boolean tierBox = hasTierBox(item, iconBoxTier);
@@ -728,19 +730,10 @@ public class GroundItemsModifiableOverlay extends Overlay
 					// colour cannot leave white text inside a green box
 					final Color picked = plugin.getItemColor(item.getId());
 					boxColor = look.tint(picked != null ? picked : tierBox ? plugin.getPriceTierColor(value) : config.highlightedColor());
-					if (!collapsed && boxWrapsName)
-					{
-						// one rectangle around icon and name
-						final int top = Math.min(iconY, textY - fm.getAscent());
-						final int bottom = Math.max(iconY + iconHeight, textY + fm.getDescent());
-						box = new RoundRectangle2D.Float(iconX - BOX_PAD, top - BOX_PAD,
-							iconSpan + textWidth + 2 * BOX_PAD, bottom - top + 2 * BOX_PAD, BOX_ARC, BOX_ARC);
-					}
-					else
-					{
-						box = new RoundRectangle2D.Float(iconX - BOX_PAD, iconY - BOX_PAD,
-							iconWidth + 2 * BOX_PAD, iconHeight + 2 * BOX_PAD, BOX_ARC, BOX_ARC);
-					}
+					final Rectangle r = RowBox.bounds(boxCovers, iconX, iconY, iconWidth, iconHeight, iconSpan,
+						textX, textY, textWidth, fm.getAscent(), fm.getDescent());
+					box = new RoundRectangle2D.Float(r.x - BOX_PAD, r.y - BOX_PAD,
+						r.width + 2 * BOX_PAD, r.height + 2 * BOX_PAD, BOX_ARC, BOX_ARC);
 					shimmer = (shimmerTier != HighlightTier.OFF && value >= shimmerTier.getValueFromTier(config))
 						|| (shimmerHighlighted && item.listed);
 					graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -773,9 +766,11 @@ public class GroundItemsModifiableOverlay extends Overlay
 			{
 				look.drawBorder(graphics, boxShape, box, boxColor);
 			}
-			// whatever sits under the icon starts below the box
-			final int underIconY = box != null ? (int) Math.ceil(box.getMaxY()) + 2
-				: icon != null ? Math.max(textY + 2, iconY + iconHeight + 2) : textY + 2;
+			// whatever sits under the icon starts below the box (and below the icon, which a name-only box leaves out)
+			final int iconBottomY = icon != null ? Math.max(textY + 2, iconY + iconHeight + 2) : textY + 2;
+			final boolean boxOnIcon = box != null && boxCovers != BoxArea.NAME;
+			final int boxBottomY = box != null ? (int) Math.ceil(box.getMaxY()) + 2 : 0;
+			final int underIconY = boxOnIcon ? boxBottomY : box != null ? Math.max(boxBottomY, iconBottomY) : iconBottomY;
 			if (timerShown)
 			{
 				if (groundItemTimers == DespawnTimerMode.RING && box != null)
@@ -796,7 +791,7 @@ public class GroundItemsModifiableOverlay extends Overlay
 				}
 				else if (groundItemTimers == DespawnTimerMode.BAR)
 				{
-					if (box != null && (collapsed || barWidth == BarWidth.ICON))
+					if (boxOnIcon && (collapsed || barWidth == BarWidth.ICON))
 					{
 						drawTimerBar(graphics, (int) box.getX(), underIconY, (int) box.getWidth(), timer);
 					}

@@ -35,6 +35,7 @@ import net.runelite.client.config.Keybind;
 import net.runelite.client.config.Range;
 import net.runelite.client.config.Units;
 import com.grounditemsmodifiable.config.BarWidth;
+import com.grounditemsmodifiable.config.BoxArea;
 import com.grounditemsmodifiable.config.BoxBorder;
 import com.grounditemsmodifiable.config.BoxCorners;
 import com.grounditemsmodifiable.config.BoxFill;
@@ -63,7 +64,7 @@ public interface GroundItemsModifiableConfig extends Config
 {
 	String GROUP = "grounditemsmodifiable";
 	// shown as the last settings section's title; bump with build.gradle and runelite_plugin.json
-	String VERSION = "1.15.1";
+	String VERSION = "1.16.0";
 	String OWNERSHIP_FILTER_MODE = "ownershipFilterMode";
 
 	@ConfigItem(
@@ -406,15 +407,15 @@ public interface GroundItemsModifiableConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "iconBoxWrapsName",
-		name = "Box wraps name",
-		description = "When a tile shows names (always, or while hovered in icons-only mode), the tier box grows to wrap the icon and the name together.",
+		keyName = "boxArea",
+		name = "Box covers",
+		description = "What the tier and highlight boxes go around when names show: the icon only, the icon and the name in one rectangle, or the name only (without the icon). Collapsed icons in icons-only mode always box the icon. Name only also boxes names when item icons are off.",
 		position = 14,
 		section = overlaySection
 	)
-	default boolean iconBoxWrapsName()
+	default BoxArea boxArea()
 	{
-		return true;
+		return BoxArea.ICON_AND_NAME;
 	}
 
 	@ConfigItem(

@@ -42,7 +42,7 @@ Ground overlay
 | Stack size next to icon | Number only | Collapsed icons show `1,000` right after the icon; can follow the names format or be off |
 | Icon box from tier | Low | Tier-coloured box around icons of items worth at least this tier; with the ring timer its border is the timer |
 | Box highlighted items | on | Highlight-list items get a box in their highlight colour even below that tier |
-| Box wraps name | on | When names show, the tier box wraps icon and name in one rectangle |
+| Box covers | Icon and name | What the box goes around when names show: icon only, icon and name in one rectangle, or name only (also boxes names with icons off) |
 | Shimmer from tier | High | Tier boxes of items worth at least this tier pulse and get a light sweep |
 | Shimmer highlighted items | off | Highlight-list items shimmer whatever they are worth |
 | Tile value total | on | Total line above tiles with 2+ items |
@@ -108,6 +108,7 @@ Bonus
 
 ## Changelog
 
+- 1.16.0: Box covers setting replaces Box wraps name: icon only, icon and name, or name only
 - 1.15.1: seeds highlighted while you carry a seed box
 - 1.15.0: Bonus section; grimy herbs highlighted while you carry a herb sack
 - 1.14.0: Highlighted if noted list; `::whyshown` prints why nearby items are not hidden
